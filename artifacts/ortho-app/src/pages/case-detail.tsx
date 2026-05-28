@@ -9,7 +9,7 @@ import { MainLayout } from "@/components/layout/main-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
-import { Loader2, ArrowLeft, Trash2, CheckCircle2, User, FileText, AlignLeft, Box, Brain, MapPin, Zap } from "lucide-react";
+import { Loader2, ArrowLeft, Trash2, CheckCircle2, User, FileText, AlignLeft, Box, Brain, MapPin, Zap, Sparkles } from "lucide-react";
 import { getGetCaseQueryKey, getListCasesQueryKey, getListScansQueryKey } from "@workspace/api-client-react";
 import { format } from "date-fns";
 import { StatusBadge, statusLabels } from "@/components/ui/status-badge";
@@ -37,6 +37,7 @@ import { LandmarkViewer } from "@/components/landmarks/LandmarkViewer";
 import type { ToothLandmark } from "@/components/landmarks/types";
 import { AnalysisViewer } from "@/components/analysis/AnalysisViewer";
 import type { OrthoAnalysis } from "@/components/analysis/types";
+import { AICopilotPanel } from "@/components/ai-copilot/AICopilotPanel";
 
 const STATUS_ORDER: OrthoCaseStatus[] = [
   "new",
@@ -53,7 +54,7 @@ export default function CaseDetail({ params }: { params: { id: string } }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [selectedScan, setSelectedScan] = useState<Scan | null>(null);
-  const [scanViewTab, setScanViewTab] = useState<"viewer" | "segmentation" | "landmarks" | "analysis">("viewer");
+  const [scanViewTab, setScanViewTab] = useState<"viewer" | "segmentation" | "landmarks" | "analysis" | "ai-copilot">("viewer");
   const [segmentSaving, setSegmentSaving] = useState(false);
   const [savedSegmentsByScan, setSavedSegmentsByScan] = useState<Record<number, ToothSegmentData[]>>({});
   const [landmarkSaving, setLandmarkSaving] = useState(false);
@@ -467,7 +468,7 @@ export default function CaseDetail({ params }: { params: { id: string } }) {
                   </Button>
                 </div>
 
-                <Tabs value={scanViewTab} onValueChange={(v) => setScanViewTab(v as "viewer" | "segmentation" | "landmarks" | "analysis")} className="mt-3">
+                <Tabs value={scanViewTab} onValueChange={(v) => setScanViewTab(v as "viewer" | "segmentation" | "landmarks" | "analysis" | "ai-copilot")} className="mt-3">
                   <TabsList className="h-8">
                     <TabsTrigger value="viewer" className="h-7 text-xs px-3 gap-1.5">
                       <Box className="h-3.5 w-3.5" />
@@ -506,6 +507,10 @@ export default function CaseDetail({ params }: { params: { id: string } }) {
                         </span>
                       )}
                     </TabsTrigger>
+                    <TabsTrigger value="ai-copilot" className="h-7 text-xs px-3 gap-1.5">
+                      <Sparkles className="h-3.5 w-3.5 text-primary" />
+                      AI Copilot
+                    </TabsTrigger>
                   </TabsList>
                 </Tabs>
               </CardHeader>
@@ -543,7 +548,7 @@ export default function CaseDetail({ params }: { params: { id: string } }) {
                       hasSaved={(savedLandmarksByScan[selectedScan.id]?.length ?? 0) > 0}
                     />
                   </div>
-                ) : (
+                ) : scanViewTab === "analysis" ? (
                   <div className="p-4">
                     <AnalysisViewer
                       key={`analysis-${selectedScan.id}`}
@@ -558,6 +563,16 @@ export default function CaseDetail({ params }: { params: { id: string } }) {
                       onSave={(analysis) => handleSaveAnalysis(selectedScan.id, analysis)}
                       isSaving={analysisSaving}
                       hasSaved={savedAnalysisByScan[selectedScan.id] != null}
+                    />
+                  </div>
+                ) : (
+                  <div className="p-4">
+                    <AICopilotPanel
+                      key={`ai-${caseId}`}
+                      caseId={caseId}
+                      selectedScan={selectedScan}
+                      segments={savedSegmentsByScan[selectedScan.id] ?? []}
+                      analysis={savedAnalysisByScan[selectedScan.id] ?? null}
                     />
                   </div>
                 )}

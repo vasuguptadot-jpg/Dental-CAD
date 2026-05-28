@@ -8,6 +8,7 @@ import scansRouter from "./scans";
 import segmentsRouter from "./segments";
 import landmarksRouter from "./landmarks";
 import analysesRouter from "./analyses";
+import aiCopilotRouter from "./aiCopilot";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(scansRouter);
 router.use(segmentsRouter);
 router.use(landmarksRouter);
 router.use(analysesRouter);
+router.use(aiCopilotRouter);
 
 export default router;

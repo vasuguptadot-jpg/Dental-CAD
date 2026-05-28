@@ -6,3 +6,5 @@ export * from "./scans";
 export * from "./segments";
 export * from "./landmarks";
 export * from "./analyses";
+export * from "./ai_plans";
+export * from "./ai_chat";
