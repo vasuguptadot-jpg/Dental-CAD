@@ -218,6 +218,31 @@ export interface ActivityItem {
   createdAt: string;
 }
 
+export type ScanJawType = typeof ScanJawType[keyof typeof ScanJawType];
+
+
+export const ScanJawType = {
+  upper: 'upper',
+  lower: 'lower',
+  full: 'full',
+  unknown: 'unknown',
+} as const;
+
+export interface Scan {
+  id: number;
+  caseId: number;
+  patientId: number;
+  filename: string;
+  originalName: string;
+  fileType: string;
+  fileSize: number;
+  jawType: ScanJawType;
+  /** @nullable */
+  notes?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export interface CaseStatusCount {
   status: string;
   count: number;
@@ -235,6 +260,11 @@ patientId?: number;
 status?: string;
 page?: number;
 limit?: number;
+};
+
+export type ListScansParams = {
+caseId?: number;
+patientId?: number;
 };
 
 export type GetRecentActivityParams = {

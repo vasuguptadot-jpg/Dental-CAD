@@ -54,6 +54,16 @@ A production-ready orthodontic treatment planning platform for managing patients
 - Case management: create orthodontic cases linked to patients, track through 6 treatment stages
 - Dashboard: stats overview, case status distribution chart, and recent activity feed
 - Case status progression: New → Scan Uploaded → Analysis Completed → Treatment Planning → Approved → Manufacturing
+- 3D Scan Viewer: upload STL/OBJ/PLY files, rotate/zoom/pan, jaw view presets, distance/angle measurement tools, model stats panel
+
+## Scan Viewer
+
+- Files stored at `artifacts/api-server/uploads/scans/` (max 200MB per file)
+- Supports STL, OBJ, PLY formats
+- Jaw view presets: upper, lower, occlusion, lateral left/right
+- Measurement tools: point selection, distance (2 points), angle (3 points)
+- Model stats: vertex count, face count, file size
+- Always-dark canvas (clinical standard), fullscreen mode
 
 ## User preferences
 

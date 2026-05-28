@@ -1,5 +1,5 @@
-import { createContext, useContext, ReactNode, useEffect } from "react";
-import { useGetMe, Doctor } from "@workspace/api-client-react";
+import { createContext, useContext, ReactNode } from "react";
+import { useGetMe, getGetMeQueryKey, Doctor } from "@workspace/api-client-react";
 
 interface AuthContextType {
   doctor: Doctor | null | undefined;
@@ -14,6 +14,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     query: {
       retry: false,
       refetchOnWindowFocus: false,
+      queryKey: getGetMeQueryKey(),
     },
   });
 

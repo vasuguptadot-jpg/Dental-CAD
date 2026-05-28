@@ -2,14 +2,15 @@ import {
   useGetCase, 
   useUpdateCaseStatus, 
   useDeleteCase, 
-  OrthoCaseStatus 
+  OrthoCaseStatus,
+  type Scan
 } from "@workspace/api-client-react";
 import { MainLayout } from "@/components/layout/main-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
-import { Loader2, ArrowLeft, Trash2, CheckCircle2, User, FileText, AlignLeft } from "lucide-react";
-import { getGetCaseQueryKey, getListCasesQueryKey } from "@workspace/api-client-react";
+import { Loader2, ArrowLeft, Trash2, CheckCircle2, User, FileText, AlignLeft, Box } from "lucide-react";
+import { getGetCaseQueryKey, getListCasesQueryKey, getListScansQueryKey } from "@workspace/api-client-react";
 import { format } from "date-fns";
 import { StatusBadge, statusLabels } from "@/components/ui/status-badge";
 import {
@@ -24,6 +25,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { ScanList } from "@/components/scan-viewer/ScanList";
+import { ScanUpload } from "@/components/scan-viewer/ScanUpload";
+import { ScanViewer } from "@/components/scan-viewer/ScanViewer";
 
 const STATUS_ORDER: OrthoCaseStatus[] = [
   "new",
@@ -38,6 +43,7 @@ export default function CaseDetail({ params }: { params: { id: string } }) {
   const caseId = parseInt(params.id, 10);
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
+  const [selectedScan, setSelectedScan] = useState<Scan | null>(null);
 
   const { data: orthoCase, isLoading } = useGetCase(caseId, {
     query: { enabled: !!caseId, queryKey: getGetCaseQueryKey(caseId) }
@@ -70,6 +76,13 @@ export default function CaseDetail({ params }: { params: { id: string } }) {
     );
   };
 
+  const handleScanUploadSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: getListScansQueryKey({ caseId }) });
+    if (orthoCase?.status === "new") {
+      handleStatusAdvance("scan_uploaded");
+    }
+  };
+
   if (isLoading) {
     return (
       <MainLayout>
@@ -99,7 +112,7 @@ export default function CaseDetail({ params }: { params: { id: string } }) {
 
   return (
     <MainLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 pb-12">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="icon" onClick={() => window.history.back()}>
             <ArrowLeft className="h-4 w-4" />
@@ -256,6 +269,54 @@ export default function CaseDetail({ params }: { params: { id: string } }) {
               </CardContent>
             </Card>
           </div>
+        </div>
+
+        {/* 3D Scans Section */}
+        <div className="space-y-4 mt-8 pt-8 border-t">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Box className="h-6 w-6 text-primary" />
+              <h2 className="text-2xl font-bold tracking-tight">3D Scans</h2>
+            </div>
+            <ScanUpload 
+              caseId={caseId} 
+              patientId={orthoCase.patientId} 
+              onSuccess={handleScanUploadSuccess} 
+            />
+          </div>
+
+          <ScanList 
+            caseId={caseId} 
+            patientId={orthoCase.patientId} 
+            selectedScanId={selectedScan?.id}
+            onSelectScan={setSelectedScan} 
+          />
+
+          {selectedScan && (
+            <Card className="overflow-hidden mt-6 shadow-md border-primary/20">
+              <CardHeader className="bg-muted/30 pb-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      Viewing: {selectedScan.filename}
+                    </CardTitle>
+                    <CardDescription className="mt-1">
+                      Uploaded on {format(new Date(selectedScan.createdAt), "MMMM d, yyyy")}
+                    </CardDescription>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedScan(null)}>
+                    Close Viewer
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <ScanViewer 
+                  fileUrl={`/api/scans/${selectedScan.id}/file`}
+                  fileType={selectedScan.filename.split('.').pop()?.toLowerCase() || 'stl'}
+                />
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </MainLayout>

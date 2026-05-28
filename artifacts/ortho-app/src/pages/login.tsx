@@ -63,7 +63,7 @@ export default function Login() {
         onError: (error) => {
           form.setError("root", { 
             type: "manual", 
-            message: error?.error || "Invalid credentials. Please try again." 
+            message: error?.data?.error || error?.message || "Invalid credentials. Please try again." 
           });
         }
       }

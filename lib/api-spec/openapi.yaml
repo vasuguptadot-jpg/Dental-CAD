@@ -15,6 +15,8 @@ tags:
     description: Patient management
   - name: cases
     description: Orthodontic case management
+  - name: scans
+    description: 3D scan file management
   - name: dashboard
     description: Dashboard analytics
 
@@ -339,6 +341,117 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OrthoCase"
+
+  /scans/upload:
+    post:
+      operationId: uploadScan
+      tags: [scans]
+      summary: Upload a 3D scan file (STL, OBJ, PLY) via multipart/form-data
+      responses:
+        "201":
+          description: Scan uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Scan"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /scans:
+    get:
+      operationId: listScans
+      tags: [scans]
+      summary: List scans, optionally filtered by case
+      parameters:
+        - name: caseId
+          in: query
+          schema:
+            type: integer
+        - name: patientId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of scans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Scan"
+
+  /scans/{id}:
+    get:
+      operationId: getScan
+      tags: [scans]
+      summary: Get scan metadata
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Scan metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Scan"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteScan
+      tags: [scans]
+      summary: Delete a scan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /scans/{id}/file:
+    get:
+      operationId: getScanFile
+      tags: [scans]
+      summary: Stream the raw scan file
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Binary scan file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /dashboard/stats:
     get:
@@ -668,6 +781,34 @@ components:
         caseCode:
           type: ["string", "null"]
         createdAt:
+          type: string
+
+    Scan:
+      type: object
+      required: [id, caseId, patientId, filename, originalName, fileType, fileSize, jawType, createdAt]
+      properties:
+        id:
+          type: integer
+        caseId:
+          type: integer
+        patientId:
+          type: integer
+        filename:
+          type: string
+        originalName:
+          type: string
+        fileType:
+          type: string
+        fileSize:
+          type: integer
+        jawType:
+          type: string
+          enum: [upper, lower, full, unknown]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
           type: string
 
     CaseStatusCount:

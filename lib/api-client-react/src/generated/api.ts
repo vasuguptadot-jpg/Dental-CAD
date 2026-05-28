@@ -34,6 +34,7 @@ import type {
   HealthStatus,
   ListCasesParams,
   ListPatientsParams,
+  ListScansParams,
   LoginInput,
   OrthoCase,
   Patient,
@@ -41,6 +42,7 @@ import type {
   PatientInput,
   PatientListResponse,
   PatientUpdate,
+  Scan,
   SuccessResponse
 } from './api.schemas';
 
@@ -1170,6 +1172,384 @@ export const useUpdateCaseStatus = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getUpdateCaseStatusMutationOptions(options));
     }
+
+export const getUploadScanUrl = () => {
+
+
+
+
+  return `/api/scans/upload`
+}
+
+/**
+ * @summary Upload a 3D scan file (STL, OBJ, PLY) via multipart/form-data
+ */
+export const uploadScan = async ( options?: RequestInit): Promise<Scan> => {
+
+  return customFetch<Scan>(getUploadScanUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getUploadScanMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadScan>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadScan>>, TError,void, TContext> => {
+
+const mutationKey = ['uploadScan'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadScan>>, void> = () => {
+
+
+          return  uploadScan(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadScanMutationResult = NonNullable<Awaited<ReturnType<typeof uploadScan>>>
+
+    export type UploadScanMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Upload a 3D scan file (STL, OBJ, PLY) via multipart/form-data
+ */
+export const useUploadScan = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadScan>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadScan>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getUploadScanMutationOptions(options));
+    }
+
+export const getListScansUrl = (params?: ListScansParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/scans?${stringifiedParams}` : `/api/scans`
+}
+
+/**
+ * @summary List scans, optionally filtered by case
+ */
+export const listScans = async (params?: ListScansParams, options?: RequestInit): Promise<Scan[]> => {
+
+  return customFetch<Scan[]>(getListScansUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListScansQueryKey = (params?: ListScansParams,) => {
+    return [
+    `/api/scans`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListScansQueryOptions = <TData = Awaited<ReturnType<typeof listScans>>, TError = ErrorType<unknown>>(params?: ListScansParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listScans>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListScansQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listScans>>> = ({ signal }) => listScans(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listScans>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListScansQueryResult = NonNullable<Awaited<ReturnType<typeof listScans>>>
+export type ListScansQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List scans, optionally filtered by case
+ */
+
+export function useListScans<TData = Awaited<ReturnType<typeof listScans>>, TError = ErrorType<unknown>>(
+ params?: ListScansParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listScans>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListScansQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetScanUrl = (id: number,) => {
+
+
+
+
+  return `/api/scans/${id}`
+}
+
+/**
+ * @summary Get scan metadata
+ */
+export const getScan = async (id: number, options?: RequestInit): Promise<Scan> => {
+
+  return customFetch<Scan>(getGetScanUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetScanQueryKey = (id: number,) => {
+    return [
+    `/api/scans/${id}`
+    ] as const;
+    }
+
+
+export const getGetScanQueryOptions = <TData = Awaited<ReturnType<typeof getScan>>, TError = ErrorType<ErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getScan>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetScanQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getScan>>> = ({ signal }) => getScan(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getScan>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetScanQueryResult = NonNullable<Awaited<ReturnType<typeof getScan>>>
+export type GetScanQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get scan metadata
+ */
+
+export function useGetScan<TData = Awaited<ReturnType<typeof getScan>>, TError = ErrorType<ErrorResponse>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getScan>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetScanQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getDeleteScanUrl = (id: number,) => {
+
+
+
+
+  return `/api/scans/${id}`
+}
+
+/**
+ * @summary Delete a scan
+ */
+export const deleteScan = async (id: number, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getDeleteScanUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteScanMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteScan>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteScan>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteScan'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteScan>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteScan(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteScanMutationResult = NonNullable<Awaited<ReturnType<typeof deleteScan>>>
+
+    export type DeleteScanMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a scan
+ */
+export const useDeleteScan = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteScan>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteScan>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteScanMutationOptions(options));
+    }
+
+export const getGetScanFileUrl = (id: number,) => {
+
+
+
+
+  return `/api/scans/${id}/file`
+}
+
+/**
+ * @summary Stream the raw scan file
+ */
+export const getScanFile = async (id: number, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getGetScanFileUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetScanFileQueryKey = (id: number,) => {
+    return [
+    `/api/scans/${id}/file`
+    ] as const;
+    }
+
+
+export const getGetScanFileQueryOptions = <TData = Awaited<ReturnType<typeof getScanFile>>, TError = ErrorType<ErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getScanFile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetScanFileQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getScanFile>>> = ({ signal }) => getScanFile(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getScanFile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetScanFileQueryResult = NonNullable<Awaited<ReturnType<typeof getScanFile>>>
+export type GetScanFileQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Stream the raw scan file
+ */
+
+export function useGetScanFile<TData = Awaited<ReturnType<typeof getScanFile>>, TError = ErrorType<ErrorResponse>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getScanFile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetScanFileQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetDashboardStatsUrl = () => {
 

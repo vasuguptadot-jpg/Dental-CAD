@@ -310,6 +310,73 @@ export const UpdateCaseStatusResponse = zod.object({
 
 
 /**
+ * @summary List scans, optionally filtered by case
+ */
+export const ListScansQueryParams = zod.object({
+  "caseId": zod.coerce.number().optional(),
+  "patientId": zod.coerce.number().optional()
+})
+
+export const ListScansResponseItem = zod.object({
+  "id": zod.number(),
+  "caseId": zod.number(),
+  "patientId": zod.number(),
+  "filename": zod.string(),
+  "originalName": zod.string(),
+  "fileType": zod.string(),
+  "fileSize": zod.number(),
+  "jawType": zod.enum(['upper', 'lower', 'full', 'unknown']),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional()
+})
+export const ListScansResponse = zod.array(ListScansResponseItem)
+
+
+/**
+ * @summary Get scan metadata
+ */
+export const GetScanParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetScanResponse = zod.object({
+  "id": zod.number(),
+  "caseId": zod.number(),
+  "patientId": zod.number(),
+  "filename": zod.string(),
+  "originalName": zod.string(),
+  "fileType": zod.string(),
+  "fileSize": zod.number(),
+  "jawType": zod.enum(['upper', 'lower', 'full', 'unknown']),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional()
+})
+
+
+/**
+ * @summary Delete a scan
+ */
+export const DeleteScanParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteScanResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string().optional()
+})
+
+
+/**
+ * @summary Stream the raw scan file
+ */
+export const GetScanFileParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary Get dashboard statistics
  */
 export const GetDashboardStatsResponse = zod.object({
