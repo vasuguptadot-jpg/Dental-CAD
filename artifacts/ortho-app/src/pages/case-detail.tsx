@@ -9,7 +9,7 @@ import { MainLayout } from "@/components/layout/main-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
-import { Loader2, ArrowLeft, Trash2, CheckCircle2, User, FileText, AlignLeft, Box, Brain } from "lucide-react";
+import { Loader2, ArrowLeft, Trash2, CheckCircle2, User, FileText, AlignLeft, Box, Brain, MapPin } from "lucide-react";
 import { getGetCaseQueryKey, getListCasesQueryKey, getListScansQueryKey } from "@workspace/api-client-react";
 import { format } from "date-fns";
 import { StatusBadge, statusLabels } from "@/components/ui/status-badge";
@@ -33,6 +33,8 @@ import { ScanUpload } from "@/components/scan-viewer/ScanUpload";
 import { ScanViewer } from "@/components/scan-viewer/ScanViewer";
 import { SegmentationViewer } from "@/components/segmentation/SegmentationViewer";
 import type { ToothSegmentData } from "@/components/segmentation/types";
+import { LandmarkViewer } from "@/components/landmarks/LandmarkViewer";
+import type { ToothLandmark } from "@/components/landmarks/types";
 
 const STATUS_ORDER: OrthoCaseStatus[] = [
   "new",
@@ -49,9 +51,11 @@ export default function CaseDetail({ params }: { params: { id: string } }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [selectedScan, setSelectedScan] = useState<Scan | null>(null);
-  const [scanViewTab, setScanViewTab] = useState<"viewer" | "segmentation">("viewer");
+  const [scanViewTab, setScanViewTab] = useState<"viewer" | "segmentation" | "landmarks">("viewer");
   const [segmentSaving, setSegmentSaving] = useState(false);
   const [savedSegmentsByScan, setSavedSegmentsByScan] = useState<Record<number, ToothSegmentData[]>>({});
+  const [landmarkSaving, setLandmarkSaving] = useState(false);
+  const [savedLandmarksByScan, setSavedLandmarksByScan] = useState<Record<number, ToothLandmark[]>>({});
 
   const { data: orthoCase, isLoading } = useGetCase(caseId, {
     query: { enabled: !!caseId, queryKey: getGetCaseQueryKey(caseId) }
@@ -116,21 +120,63 @@ export default function CaseDetail({ params }: { params: { id: string } }) {
       const res = await fetch(`/api/scans/${scanId}/segments`, { credentials: "include" });
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          setSavedSegmentsByScan((prev) => ({ ...prev, [scanId]: data }));
-        } else {
-          setSavedSegmentsByScan((prev) => ({ ...prev, [scanId]: [] }));
-        }
+        setSavedSegmentsByScan((prev) => ({
+          ...prev,
+          [scanId]: Array.isArray(data) ? data : [],
+        }));
       }
+    } catch { /* ignore */ }
+  };
+
+  const loadLandmarksForScan = async (scanId: number) => {
+    if (savedLandmarksByScan[scanId] !== undefined) return;
+    try {
+      const res = await fetch(`/api/scans/${scanId}/landmarks`, { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setSavedLandmarksByScan((prev) => ({
+          ...prev,
+          [scanId]: Array.isArray(data)
+            ? data.map((row: Record<string, unknown>) => ({
+                id: `${row.toothId}_${row.type}`,
+                toothId: row.toothId as number,
+                type: row.type as ToothLandmark["type"],
+                position: row.position as ToothLandmark["position"],
+                confidence: (row.confidence as number) ?? 100,
+                isManual: !!(row.isManual),
+              }))
+            : [],
+        }));
+      }
+    } catch { /* ignore */ }
+  };
+
+  const handleSaveLandmarks = async (scanId: number, landmarks: ToothLandmark[]) => {
+    setLandmarkSaving(true);
+    try {
+      const res = await fetch(`/api/scans/${scanId}/landmarks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ landmarks }),
+      });
+      if (!res.ok) throw new Error("Save failed");
+      setSavedLandmarksByScan((prev) => ({ ...prev, [scanId]: landmarks }));
+      toast({ title: "Landmarks saved", description: `${landmarks.length} landmarks stored for this scan.` });
     } catch {
-      /* ignore */
+      toast({ title: "Save failed", description: "Could not save landmark data.", variant: "destructive" });
+    } finally {
+      setLandmarkSaving(false);
     }
   };
 
   const handleSelectScan = (scan: Scan | null) => {
     setSelectedScan(scan);
     setScanViewTab("viewer");
-    if (scan) loadSegmentsForScan(scan.id);
+    if (scan) {
+      loadSegmentsForScan(scan.id);
+      loadLandmarksForScan(scan.id);
+    }
   };
 
   if (isLoading) {
@@ -362,7 +408,7 @@ export default function CaseDetail({ params }: { params: { id: string } }) {
                   </Button>
                 </div>
 
-                <Tabs value={scanViewTab} onValueChange={(v) => setScanViewTab(v as "viewer" | "segmentation")} className="mt-3">
+                <Tabs value={scanViewTab} onValueChange={(v) => setScanViewTab(v as "viewer" | "segmentation" | "landmarks")} className="mt-3">
                   <TabsList className="h-8">
                     <TabsTrigger value="viewer" className="h-7 text-xs px-3 gap-1.5">
                       <Box className="h-3.5 w-3.5" />
@@ -377,16 +423,25 @@ export default function CaseDetail({ params }: { params: { id: string } }) {
                         </span>
                       )}
                     </TabsTrigger>
+                    <TabsTrigger value="landmarks" className="h-7 text-xs px-3 gap-1.5">
+                      <MapPin className="h-3.5 w-3.5" />
+                      Landmarks
+                      {savedLandmarksByScan[selectedScan.id]?.length > 0 && (
+                        <span className="ml-1 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-500 text-[10px] font-mono">
+                          {savedLandmarksByScan[selectedScan.id].length}
+                        </span>
+                      )}
+                    </TabsTrigger>
                   </TabsList>
                 </Tabs>
               </CardHeader>
               <CardContent className="p-0">
                 {scanViewTab === "viewer" ? (
-                  <ScanViewer 
+                  <ScanViewer
                     fileUrl={`/api/scans/${selectedScan.id}/file`}
                     fileType={selectedScan.fileType || selectedScan.filename.split('.').pop()?.toLowerCase() || 'stl'}
                   />
-                ) : (
+                ) : scanViewTab === "segmentation" ? (
                   <SegmentationViewer
                     key={selectedScan.id}
                     fileUrl={`/api/scans/${selectedScan.id}/file`}
@@ -398,6 +453,22 @@ export default function CaseDetail({ params }: { params: { id: string } }) {
                     isSaving={segmentSaving}
                     hasSavedResults={(savedSegmentsByScan[selectedScan.id]?.length ?? 0) > 0}
                   />
+                ) : (
+                  <div className="p-4">
+                    <LandmarkViewer
+                      key={`lm-${selectedScan.id}`}
+                      fileUrl={`/api/scans/${selectedScan.id}/file`}
+                      fileType={selectedScan.fileType || selectedScan.filename.split('.').pop()?.toLowerCase() || 'stl'}
+                      scanId={selectedScan.id}
+                      jawType={selectedScan.jawType ?? "unknown"}
+                      scanName={selectedScan.originalName ?? selectedScan.filename}
+                      segments={savedSegmentsByScan[selectedScan.id] ?? []}
+                      initialLandmarks={savedLandmarksByScan[selectedScan.id]?.length > 0 ? savedLandmarksByScan[selectedScan.id] : undefined}
+                      onSave={(landmarks) => handleSaveLandmarks(selectedScan.id, landmarks)}
+                      isSaving={landmarkSaving}
+                      hasSaved={(savedLandmarksByScan[selectedScan.id]?.length ?? 0) > 0}
+                    />
+                  </div>
                 )}
               </CardContent>
             </Card>

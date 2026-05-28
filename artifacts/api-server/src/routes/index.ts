@@ -6,6 +6,7 @@ import casesRouter from "./cases";
 import dashboardRouter from "./dashboard";
 import scansRouter from "./scans";
 import segmentsRouter from "./segments";
+import landmarksRouter from "./landmarks";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(casesRouter);
 router.use(dashboardRouter);
 router.use(scansRouter);
 router.use(segmentsRouter);
+router.use(landmarksRouter);
 
 export default router;
