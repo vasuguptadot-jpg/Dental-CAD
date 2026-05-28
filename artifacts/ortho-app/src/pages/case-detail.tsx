@@ -9,7 +9,7 @@ import { MainLayout } from "@/components/layout/main-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
-import { Loader2, ArrowLeft, Trash2, CheckCircle2, User, FileText, AlignLeft, Box, Brain, MapPin } from "lucide-react";
+import { Loader2, ArrowLeft, Trash2, CheckCircle2, User, FileText, AlignLeft, Box, Brain, MapPin, Zap } from "lucide-react";
 import { getGetCaseQueryKey, getListCasesQueryKey, getListScansQueryKey } from "@workspace/api-client-react";
 import { format } from "date-fns";
 import { StatusBadge, statusLabels } from "@/components/ui/status-badge";
@@ -35,6 +35,8 @@ import { SegmentationViewer } from "@/components/segmentation/SegmentationViewer
 import type { ToothSegmentData } from "@/components/segmentation/types";
 import { LandmarkViewer } from "@/components/landmarks/LandmarkViewer";
 import type { ToothLandmark } from "@/components/landmarks/types";
+import { AnalysisViewer } from "@/components/analysis/AnalysisViewer";
+import type { OrthoAnalysis } from "@/components/analysis/types";
 
 const STATUS_ORDER: OrthoCaseStatus[] = [
   "new",
@@ -51,11 +53,13 @@ export default function CaseDetail({ params }: { params: { id: string } }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [selectedScan, setSelectedScan] = useState<Scan | null>(null);
-  const [scanViewTab, setScanViewTab] = useState<"viewer" | "segmentation" | "landmarks">("viewer");
+  const [scanViewTab, setScanViewTab] = useState<"viewer" | "segmentation" | "landmarks" | "analysis">("viewer");
   const [segmentSaving, setSegmentSaving] = useState(false);
   const [savedSegmentsByScan, setSavedSegmentsByScan] = useState<Record<number, ToothSegmentData[]>>({});
   const [landmarkSaving, setLandmarkSaving] = useState(false);
   const [savedLandmarksByScan, setSavedLandmarksByScan] = useState<Record<number, ToothLandmark[]>>({});
+  const [analysisSaving, setAnalysisSaving] = useState(false);
+  const [savedAnalysisByScan, setSavedAnalysisByScan] = useState<Record<number, OrthoAnalysis | null>>({});
 
   const { data: orthoCase, isLoading } = useGetCase(caseId, {
     query: { enabled: !!caseId, queryKey: getGetCaseQueryKey(caseId) }
@@ -170,12 +174,67 @@ export default function CaseDetail({ params }: { params: { id: string } }) {
     }
   };
 
+  const loadAnalysisForScan = async (scanId: number) => {
+    if (savedAnalysisByScan[scanId] !== undefined) return;
+    try {
+      const res = await fetch(`/api/scans/${scanId}/analysis`, { credentials: "include" });
+      if (res.ok) {
+        const row = await res.json() as {
+          findings: OrthoAnalysis["findings"];
+          complexityScore: number;
+          complexityLabel: OrthoAnalysis["complexityLabel"];
+          summary: string;
+          analyzedAt: string;
+        };
+        const analysis: OrthoAnalysis = {
+          findings: row.findings,
+          complexityScore: row.complexityScore,
+          complexityLabel: row.complexityLabel,
+          summary: row.summary,
+          toothHealthMap: {},
+          affectedToothCount: 0,
+          analyzedAt: row.analyzedAt,
+        };
+        setSavedAnalysisByScan((prev) => ({ ...prev, [scanId]: analysis }));
+      } else {
+        setSavedAnalysisByScan((prev) => ({ ...prev, [scanId]: null }));
+      }
+    } catch {
+      setSavedAnalysisByScan((prev) => ({ ...prev, [scanId]: null }));
+    }
+  };
+
+  const handleSaveAnalysis = async (scanId: number, analysis: OrthoAnalysis) => {
+    setAnalysisSaving(true);
+    try {
+      const res = await fetch(`/api/scans/${scanId}/analysis`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          findings: analysis.findings,
+          complexityScore: Math.round(analysis.complexityScore),
+          complexityLabel: analysis.complexityLabel,
+          summary: analysis.summary,
+        }),
+      });
+      if (!res.ok) throw new Error("Save failed");
+      setSavedAnalysisByScan((prev) => ({ ...prev, [scanId]: analysis }));
+      toast({ title: "Analysis saved", description: `${analysis.findings.length} findings stored for this scan.` });
+    } catch {
+      toast({ title: "Save failed", description: "Could not save analysis.", variant: "destructive" });
+    } finally {
+      setAnalysisSaving(false);
+    }
+  };
+
   const handleSelectScan = (scan: Scan | null) => {
     setSelectedScan(scan);
     setScanViewTab("viewer");
     if (scan) {
       loadSegmentsForScan(scan.id);
       loadLandmarksForScan(scan.id);
+      loadAnalysisForScan(scan.id);
     }
   };
 
@@ -408,7 +467,7 @@ export default function CaseDetail({ params }: { params: { id: string } }) {
                   </Button>
                 </div>
 
-                <Tabs value={scanViewTab} onValueChange={(v) => setScanViewTab(v as "viewer" | "segmentation" | "landmarks")} className="mt-3">
+                <Tabs value={scanViewTab} onValueChange={(v) => setScanViewTab(v as "viewer" | "segmentation" | "landmarks" | "analysis")} className="mt-3">
                   <TabsList className="h-8">
                     <TabsTrigger value="viewer" className="h-7 text-xs px-3 gap-1.5">
                       <Box className="h-3.5 w-3.5" />
@@ -429,6 +488,21 @@ export default function CaseDetail({ params }: { params: { id: string } }) {
                       {savedLandmarksByScan[selectedScan.id]?.length > 0 && (
                         <span className="ml-1 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-500 text-[10px] font-mono">
                           {savedLandmarksByScan[selectedScan.id].length}
+                        </span>
+                      )}
+                    </TabsTrigger>
+                    <TabsTrigger value="analysis" className="h-7 text-xs px-3 gap-1.5">
+                      <Zap className="h-3.5 w-3.5" />
+                      Analysis
+                      {savedAnalysisByScan[selectedScan.id] != null && (
+                        <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                          savedAnalysisByScan[selectedScan.id]!.complexityLabel === "low"
+                            ? "bg-emerald-500/20 text-emerald-400"
+                            : savedAnalysisByScan[selectedScan.id]!.complexityLabel === "moderate"
+                            ? "bg-amber-500/20 text-amber-400"
+                            : "bg-rose-500/20 text-rose-400"
+                        }`}>
+                          {savedAnalysisByScan[selectedScan.id]!.complexityLabel}
                         </span>
                       )}
                     </TabsTrigger>
@@ -453,7 +527,7 @@ export default function CaseDetail({ params }: { params: { id: string } }) {
                     isSaving={segmentSaving}
                     hasSavedResults={(savedSegmentsByScan[selectedScan.id]?.length ?? 0) > 0}
                   />
-                ) : (
+                ) : scanViewTab === "landmarks" ? (
                   <div className="p-4">
                     <LandmarkViewer
                       key={`lm-${selectedScan.id}`}
@@ -467,6 +541,23 @@ export default function CaseDetail({ params }: { params: { id: string } }) {
                       onSave={(landmarks) => handleSaveLandmarks(selectedScan.id, landmarks)}
                       isSaving={landmarkSaving}
                       hasSaved={(savedLandmarksByScan[selectedScan.id]?.length ?? 0) > 0}
+                    />
+                  </div>
+                ) : (
+                  <div className="p-4">
+                    <AnalysisViewer
+                      key={`analysis-${selectedScan.id}`}
+                      fileUrl={`/api/scans/${selectedScan.id}/file`}
+                      fileType={selectedScan.fileType || selectedScan.filename.split('.').pop()?.toLowerCase() || 'stl'}
+                      scanId={selectedScan.id}
+                      jawType={selectedScan.jawType ?? "unknown"}
+                      scanName={selectedScan.originalName ?? selectedScan.filename}
+                      segments={savedSegmentsByScan[selectedScan.id] ?? []}
+                      landmarks={savedLandmarksByScan[selectedScan.id] ?? []}
+                      initialAnalysis={savedAnalysisByScan[selectedScan.id] ?? null}
+                      onSave={(analysis) => handleSaveAnalysis(selectedScan.id, analysis)}
+                      isSaving={analysisSaving}
+                      hasSaved={savedAnalysisByScan[selectedScan.id] != null}
                     />
                   </div>
                 )}
