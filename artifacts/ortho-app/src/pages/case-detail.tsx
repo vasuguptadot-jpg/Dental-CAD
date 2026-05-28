@@ -9,7 +9,7 @@ import { MainLayout } from "@/components/layout/main-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
-import { Loader2, ArrowLeft, Trash2, CheckCircle2, User, FileText, AlignLeft, Box } from "lucide-react";
+import { Loader2, ArrowLeft, Trash2, CheckCircle2, User, FileText, AlignLeft, Box, Brain } from "lucide-react";
 import { getGetCaseQueryKey, getListCasesQueryKey, getListScansQueryKey } from "@workspace/api-client-react";
 import { format } from "date-fns";
 import { StatusBadge, statusLabels } from "@/components/ui/status-badge";
@@ -24,11 +24,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { ScanList } from "@/components/scan-viewer/ScanList";
 import { ScanUpload } from "@/components/scan-viewer/ScanUpload";
 import { ScanViewer } from "@/components/scan-viewer/ScanViewer";
+import { SegmentationViewer } from "@/components/segmentation/SegmentationViewer";
+import type { ToothSegmentData } from "@/components/segmentation/types";
 
 const STATUS_ORDER: OrthoCaseStatus[] = [
   "new",
@@ -43,7 +47,11 @@ export default function CaseDetail({ params }: { params: { id: string } }) {
   const caseId = parseInt(params.id, 10);
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [selectedScan, setSelectedScan] = useState<Scan | null>(null);
+  const [scanViewTab, setScanViewTab] = useState<"viewer" | "segmentation">("viewer");
+  const [segmentSaving, setSegmentSaving] = useState(false);
+  const [savedSegmentsByScan, setSavedSegmentsByScan] = useState<Record<number, ToothSegmentData[]>>({});
 
   const { data: orthoCase, isLoading } = useGetCase(caseId, {
     query: { enabled: !!caseId, queryKey: getGetCaseQueryKey(caseId) }
@@ -81,6 +89,48 @@ export default function CaseDetail({ params }: { params: { id: string } }) {
     if (orthoCase?.status === "new") {
       handleStatusAdvance("scan_uploaded");
     }
+  };
+
+  const handleSaveSegmentation = async (scanId: number, segments: ToothSegmentData[]) => {
+    setSegmentSaving(true);
+    try {
+      const res = await fetch(`/api/scans/${scanId}/segments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ segments }),
+      });
+      if (!res.ok) throw new Error("Save failed");
+      setSavedSegmentsByScan((prev) => ({ ...prev, [scanId]: segments }));
+      toast({ title: "Segmentation saved", description: `${segments.length} tooth segments stored.` });
+    } catch {
+      toast({ title: "Save failed", description: "Could not save segmentation data.", variant: "destructive" });
+    } finally {
+      setSegmentSaving(false);
+    }
+  };
+
+  const loadSegmentsForScan = async (scanId: number) => {
+    if (savedSegmentsByScan[scanId] !== undefined) return;
+    try {
+      const res = await fetch(`/api/scans/${scanId}/segments`, { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setSavedSegmentsByScan((prev) => ({ ...prev, [scanId]: data }));
+        } else {
+          setSavedSegmentsByScan((prev) => ({ ...prev, [scanId]: [] }));
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const handleSelectScan = (scan: Scan | null) => {
+    setSelectedScan(scan);
+    setScanViewTab("viewer");
+    if (scan) loadSegmentsForScan(scan.id);
   };
 
   if (isLoading) {
@@ -289,31 +339,66 @@ export default function CaseDetail({ params }: { params: { id: string } }) {
             caseId={caseId} 
             patientId={orthoCase.patientId} 
             selectedScanId={selectedScan?.id}
-            onSelectScan={setSelectedScan} 
+            onSelectScan={handleSelectScan} 
           />
 
           {selectedScan && (
             <Card className="overflow-hidden mt-6 shadow-md border-primary/20">
-              <CardHeader className="bg-muted/30 pb-4">
-                <div className="flex justify-between items-center">
+              <CardHeader className="bg-muted/30 pb-3">
+                <div className="flex justify-between items-start">
                   <div>
                     <CardTitle className="flex items-center gap-2">
-                      Viewing: {selectedScan.filename}
+                      {selectedScan.originalName ?? selectedScan.filename}
                     </CardTitle>
                     <CardDescription className="mt-1">
-                      Uploaded on {format(new Date(selectedScan.createdAt), "MMMM d, yyyy")}
+                      {selectedScan.jawType !== "unknown" && (
+                        <span className="capitalize mr-2">{selectedScan.jawType} jaw •</span>
+                      )}
+                      Uploaded {format(new Date(selectedScan.createdAt), "MMMM d, yyyy")}
                     </CardDescription>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => setSelectedScan(null)}>
-                    Close Viewer
+                  <Button variant="ghost" size="sm" onClick={() => handleSelectScan(null)}>
+                    Close
                   </Button>
                 </div>
+
+                <Tabs value={scanViewTab} onValueChange={(v) => setScanViewTab(v as "viewer" | "segmentation")} className="mt-3">
+                  <TabsList className="h-8">
+                    <TabsTrigger value="viewer" className="h-7 text-xs px-3 gap-1.5">
+                      <Box className="h-3.5 w-3.5" />
+                      3D Viewer
+                    </TabsTrigger>
+                    <TabsTrigger value="segmentation" className="h-7 text-xs px-3 gap-1.5">
+                      <Brain className="h-3.5 w-3.5" />
+                      AI Segmentation
+                      {savedSegmentsByScan[selectedScan.id]?.length > 0 && (
+                        <span className="ml-1 px-1.5 py-0.5 rounded bg-primary/20 text-primary text-[10px] font-mono">
+                          {savedSegmentsByScan[selectedScan.id].length}
+                        </span>
+                      )}
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </CardHeader>
               <CardContent className="p-0">
-                <ScanViewer 
-                  fileUrl={`/api/scans/${selectedScan.id}/file`}
-                  fileType={selectedScan.filename.split('.').pop()?.toLowerCase() || 'stl'}
-                />
+                {scanViewTab === "viewer" ? (
+                  <ScanViewer 
+                    fileUrl={`/api/scans/${selectedScan.id}/file`}
+                    fileType={selectedScan.fileType || selectedScan.filename.split('.').pop()?.toLowerCase() || 'stl'}
+                  />
+                ) : (
+                  <SegmentationViewer
+                    key={selectedScan.id}
+                    fileUrl={`/api/scans/${selectedScan.id}/file`}
+                    fileType={selectedScan.fileType || selectedScan.filename.split('.').pop()?.toLowerCase() || 'stl'}
+                    scanId={selectedScan.id}
+                    jawType={selectedScan.jawType ?? "unknown"}
+                    initialSegments={savedSegmentsByScan[selectedScan.id]?.length > 0 ? savedSegmentsByScan[selectedScan.id] : undefined}
+                    onSave={(segments) => handleSaveSegmentation(selectedScan.id, segments)}
+                    isSaving={segmentSaving}
+                    hasSavedResults={(savedSegmentsByScan[selectedScan.id]?.length ?? 0) > 0}
+                  />
+                )}
               </CardContent>
             </Card>
           )}

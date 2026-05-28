@@ -249,6 +249,57 @@ export interface CaseStatusCount {
   label: string;
 }
 
+export interface ToothCentroid {
+  x: number;
+  y: number;
+  z: number;
+}
+
+/**
+ * @nullable
+ */
+export type ToothSegmentMetadata = { [key: string]: unknown } | null;
+
+export interface ToothSegment {
+  id: number;
+  scanId: number;
+  toothId: number;
+  label: string;
+  color: string;
+  faceIndices: number[];
+  centroid?: ToothCentroid | null;
+  /** @nullable */
+  metadata?: ToothSegmentMetadata;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+/**
+ * @nullable
+ */
+export type ToothSegmentInputMetadata = { [key: string]: unknown } | null;
+
+export interface ToothSegmentInput {
+  toothId: number;
+  label: string;
+  color: string;
+  faceIndices: number[];
+  centroid?: ToothCentroid | null;
+  /** @nullable */
+  metadata?: ToothSegmentInputMetadata;
+}
+
+export interface ToothSegmentUpdate {
+  toothId?: number;
+  label?: string;
+  color?: string;
+  faceIndices?: number[];
+}
+
+export interface SaveSegmentsInput {
+  segments: ToothSegmentInput[];
+}
+
 export type ListPatientsParams = {
 search?: string;
 page?: number;

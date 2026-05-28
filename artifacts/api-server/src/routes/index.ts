@@ -5,6 +5,7 @@ import patientsRouter from "./patients";
 import casesRouter from "./cases";
 import dashboardRouter from "./dashboard";
 import scansRouter from "./scans";
+import segmentsRouter from "./segments";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(patientsRouter);
 router.use(casesRouter);
 router.use(dashboardRouter);
 router.use(scansRouter);
+router.use(segmentsRouter);
 
 export default router;

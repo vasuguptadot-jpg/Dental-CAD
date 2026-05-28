@@ -377,6 +377,100 @@ export const GetScanFileParams = zod.object({
 
 
 /**
+ * @summary Get saved tooth segments for a scan
+ */
+export const ListToothSegmentsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListToothSegmentsResponseItem = zod.object({
+  "id": zod.number(),
+  "scanId": zod.number(),
+  "toothId": zod.number(),
+  "label": zod.string(),
+  "color": zod.string(),
+  "faceIndices": zod.array(zod.number()),
+  "centroid": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "z": zod.number()
+}),zod.null()]).optional(),
+  "metadata": zod.record(zod.string(), zod.unknown()).nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional()
+})
+export const ListToothSegmentsResponse = zod.array(ListToothSegmentsResponseItem)
+
+
+/**
+ * @summary Save (replace) tooth segments for a scan
+ */
+export const SaveToothSegmentsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const SaveToothSegmentsBody = zod.object({
+  "segments": zod.array(zod.object({
+  "toothId": zod.number(),
+  "label": zod.string(),
+  "color": zod.string(),
+  "faceIndices": zod.array(zod.number()),
+  "centroid": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "z": zod.number()
+}),zod.null()]).optional(),
+  "metadata": zod.record(zod.string(), zod.unknown()).nullish()
+}))
+})
+
+
+/**
+ * @summary Delete all tooth segments for a scan
+ */
+export const DeleteToothSegmentsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteToothSegmentsResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string().optional()
+})
+
+
+/**
+ * @summary Update a single tooth segment
+ */
+export const UpdateToothSegmentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateToothSegmentBody = zod.object({
+  "toothId": zod.number().optional(),
+  "label": zod.string().optional(),
+  "color": zod.string().optional(),
+  "faceIndices": zod.array(zod.number()).optional()
+})
+
+export const UpdateToothSegmentResponse = zod.object({
+  "id": zod.number(),
+  "scanId": zod.number(),
+  "toothId": zod.number(),
+  "label": zod.string(),
+  "color": zod.string(),
+  "faceIndices": zod.array(zod.number()),
+  "centroid": zod.union([zod.object({
+  "x": zod.number(),
+  "y": zod.number(),
+  "z": zod.number()
+}),zod.null()]).optional(),
+  "metadata": zod.record(zod.string(), zod.unknown()).nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional()
+})
+
+
+/**
  * @summary Get dashboard statistics
  */
 export const GetDashboardStatsResponse = zod.object({

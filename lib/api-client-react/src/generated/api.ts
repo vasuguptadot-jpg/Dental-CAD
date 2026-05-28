@@ -42,8 +42,11 @@ import type {
   PatientInput,
   PatientListResponse,
   PatientUpdate,
+  SaveSegmentsInput,
   Scan,
-  SuccessResponse
+  SuccessResponse,
+  ToothSegment,
+  ToothSegmentUpdate
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -1550,6 +1553,297 @@ export function useGetScanFile<TData = Awaited<ReturnType<typeof getScanFile>>, 
 
 
 
+
+export const getListToothSegmentsUrl = (id: number,) => {
+
+
+
+
+  return `/api/scans/${id}/segments`
+}
+
+/**
+ * @summary Get saved tooth segments for a scan
+ */
+export const listToothSegments = async (id: number, options?: RequestInit): Promise<ToothSegment[]> => {
+
+  return customFetch<ToothSegment[]>(getListToothSegmentsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListToothSegmentsQueryKey = (id: number,) => {
+    return [
+    `/api/scans/${id}/segments`
+    ] as const;
+    }
+
+
+export const getListToothSegmentsQueryOptions = <TData = Awaited<ReturnType<typeof listToothSegments>>, TError = ErrorType<ErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listToothSegments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListToothSegmentsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listToothSegments>>> = ({ signal }) => listToothSegments(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listToothSegments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListToothSegmentsQueryResult = NonNullable<Awaited<ReturnType<typeof listToothSegments>>>
+export type ListToothSegmentsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get saved tooth segments for a scan
+ */
+
+export function useListToothSegments<TData = Awaited<ReturnType<typeof listToothSegments>>, TError = ErrorType<ErrorResponse>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listToothSegments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListToothSegmentsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSaveToothSegmentsUrl = (id: number,) => {
+
+
+
+
+  return `/api/scans/${id}/segments`
+}
+
+/**
+ * @summary Save (replace) tooth segments for a scan
+ */
+export const saveToothSegments = async (id: number,
+    saveSegmentsInput: SaveSegmentsInput, options?: RequestInit): Promise<ToothSegment[]> => {
+
+  return customFetch<ToothSegment[]>(getSaveToothSegmentsUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      saveSegmentsInput,)
+  }
+);}
+
+
+
+
+export const getSaveToothSegmentsMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveToothSegments>>, TError,{id: number;data: BodyType<SaveSegmentsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveToothSegments>>, TError,{id: number;data: BodyType<SaveSegmentsInput>}, TContext> => {
+
+const mutationKey = ['saveToothSegments'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveToothSegments>>, {id: number;data: BodyType<SaveSegmentsInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  saveToothSegments(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveToothSegmentsMutationResult = NonNullable<Awaited<ReturnType<typeof saveToothSegments>>>
+    export type SaveToothSegmentsMutationBody = BodyType<SaveSegmentsInput>
+    export type SaveToothSegmentsMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Save (replace) tooth segments for a scan
+ */
+export const useSaveToothSegments = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveToothSegments>>, TError,{id: number;data: BodyType<SaveSegmentsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveToothSegments>>,
+        TError,
+        {id: number;data: BodyType<SaveSegmentsInput>},
+        TContext
+      > => {
+      return useMutation(getSaveToothSegmentsMutationOptions(options));
+    }
+
+export const getDeleteToothSegmentsUrl = (id: number,) => {
+
+
+
+
+  return `/api/scans/${id}/segments`
+}
+
+/**
+ * @summary Delete all tooth segments for a scan
+ */
+export const deleteToothSegments = async (id: number, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getDeleteToothSegmentsUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteToothSegmentsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteToothSegments>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteToothSegments>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteToothSegments'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteToothSegments>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteToothSegments(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteToothSegmentsMutationResult = NonNullable<Awaited<ReturnType<typeof deleteToothSegments>>>
+
+    export type DeleteToothSegmentsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete all tooth segments for a scan
+ */
+export const useDeleteToothSegments = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteToothSegments>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteToothSegments>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteToothSegmentsMutationOptions(options));
+    }
+
+export const getUpdateToothSegmentUrl = (id: number,) => {
+
+
+
+
+  return `/api/segments/${id}`
+}
+
+/**
+ * @summary Update a single tooth segment
+ */
+export const updateToothSegment = async (id: number,
+    toothSegmentUpdate: ToothSegmentUpdate, options?: RequestInit): Promise<ToothSegment> => {
+
+  return customFetch<ToothSegment>(getUpdateToothSegmentUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      toothSegmentUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateToothSegmentMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateToothSegment>>, TError,{id: number;data: BodyType<ToothSegmentUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateToothSegment>>, TError,{id: number;data: BodyType<ToothSegmentUpdate>}, TContext> => {
+
+const mutationKey = ['updateToothSegment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateToothSegment>>, {id: number;data: BodyType<ToothSegmentUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateToothSegment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateToothSegmentMutationResult = NonNullable<Awaited<ReturnType<typeof updateToothSegment>>>
+    export type UpdateToothSegmentMutationBody = BodyType<ToothSegmentUpdate>
+    export type UpdateToothSegmentMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Update a single tooth segment
+ */
+export const useUpdateToothSegment = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateToothSegment>>, TError,{id: number;data: BodyType<ToothSegmentUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateToothSegment>>,
+        TError,
+        {id: number;data: BodyType<ToothSegmentUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateToothSegmentMutationOptions(options));
+    }
 
 export const getGetDashboardStatsUrl = () => {
 

@@ -453,6 +453,112 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /scans/{id}/segments:
+    get:
+      operationId: listToothSegments
+      tags: [scans]
+      summary: Get saved tooth segments for a scan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of tooth segments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ToothSegment"
+        "404":
+          description: Scan not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: saveToothSegments
+      tags: [scans]
+      summary: Save (replace) tooth segments for a scan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveSegmentsInput"
+      responses:
+        "201":
+          description: Segments saved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ToothSegment"
+        "404":
+          description: Scan not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteToothSegments
+      tags: [scans]
+      summary: Delete all tooth segments for a scan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /segments/{id}:
+    patch:
+      operationId: updateToothSegment
+      tags: [scans]
+      summary: Update a single tooth segment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ToothSegmentUpdate"
+      responses:
+        "200":
+          description: Updated segment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToothSegment"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /dashboard/stats:
     get:
       operationId: getDashboardStats
@@ -821,3 +927,89 @@ components:
           type: integer
         label:
           type: string
+
+    ToothCentroid:
+      type: object
+      required: [x, y, z]
+      properties:
+        x:
+          type: number
+        y:
+          type: number
+        z:
+          type: number
+
+    ToothSegment:
+      type: object
+      required: [id, scanId, toothId, label, color, faceIndices, createdAt]
+      properties:
+        id:
+          type: integer
+        scanId:
+          type: integer
+        toothId:
+          type: integer
+        label:
+          type: string
+        color:
+          type: string
+        faceIndices:
+          type: array
+          items:
+            type: integer
+        centroid:
+          oneOf:
+            - $ref: "#/components/schemas/ToothCentroid"
+            - type: "null"
+        metadata:
+          type: ["object", "null"]
+          additionalProperties: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    ToothSegmentInput:
+      type: object
+      required: [toothId, label, color, faceIndices]
+      properties:
+        toothId:
+          type: integer
+        label:
+          type: string
+        color:
+          type: string
+        faceIndices:
+          type: array
+          items:
+            type: integer
+        centroid:
+          oneOf:
+            - $ref: "#/components/schemas/ToothCentroid"
+            - type: "null"
+        metadata:
+          type: ["object", "null"]
+          additionalProperties: true
+
+    ToothSegmentUpdate:
+      type: object
+      properties:
+        toothId:
+          type: integer
+        label:
+          type: string
+        color:
+          type: string
+        faceIndices:
+          type: array
+          items:
+            type: integer
+
+    SaveSegmentsInput:
+      type: object
+      required: [segments]
+      properties:
+        segments:
+          type: array
+          items:
+            $ref: "#/components/schemas/ToothSegmentInput"
