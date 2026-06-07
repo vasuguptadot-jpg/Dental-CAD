@@ -113,48 +113,48 @@ export function Layout({ children }: { children: React.ReactNode }) {
           ))}
 
           <div className="px-2 py-1.5 mt-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-            <Brain className="h-3 w-3 text-primary" /> AI Engine
+            <Brain className="h-3 w-3 text-muted-foreground" /> AI Engine
           </div>
           {aiNavItems.map((item) => (
             <Link key={item.href} href={item.href}>
               <Button
                 variant={isActive(item.href) ? "secondary" : "ghost"}
-                className={`w-full justify-start gap-2 ${isActive(item.href) ? "" : "text-muted-foreground hover:text-foreground"}`}
+                className={`w-full justify-start gap-2 ${isActive(item.href) ? "font-medium" : "text-muted-foreground hover:text-foreground"}`}
               >
-                <item.icon className="h-4 w-4 text-primary" />
+                <item.icon className="h-4 w-4" />
                 {item.label}
                 {item.href === "/ai-copilot" && (
-                  <span className="ml-auto text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-bold">AI</span>
+                  <span className="ml-auto text-xs bg-foreground/10 text-foreground px-1.5 py-0.5 rounded-full font-medium tracking-tight">AI</span>
                 )}
               </Button>
             </Link>
           ))}
 
           <div className="px-2 py-1.5 mt-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-            <Scissors className="h-3 w-3 text-cyan-400" /> Clinical Tools
+            <Scissors className="h-3 w-3 text-muted-foreground" /> Clinical Tools
           </div>
           {clinicalTools.map((item) => (
             <Link key={item.href} href={item.href}>
               <Button
                 variant={isActive(item.href) ? "secondary" : "ghost"}
-                className={`w-full justify-start gap-2 ${isActive(item.href) ? "" : "text-muted-foreground hover:text-foreground"}`}
+                className={`w-full justify-start gap-2 ${isActive(item.href) ? "font-medium" : "text-muted-foreground hover:text-foreground"}`}
               >
-                <item.icon className="h-4 w-4 text-cyan-400" />
+                <item.icon className="h-4 w-4" />
                 {item.label}
               </Button>
             </Link>
           ))}
 
           <div className="px-2 py-1.5 mt-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-            <FlaskConical className="h-3 w-3 text-emerald-400" /> Lab & Scans
+            <FlaskConical className="h-3 w-3 text-muted-foreground" /> Lab & Scans
           </div>
           {workflowTools.map((item) => (
             <Link key={item.href} href={item.href}>
               <Button
                 variant={isActive(item.href) ? "secondary" : "ghost"}
-                className={`w-full justify-start gap-2 ${isActive(item.href) ? "" : "text-muted-foreground hover:text-foreground"}`}
+                className={`w-full justify-start gap-2 ${isActive(item.href) ? "font-medium" : "text-muted-foreground hover:text-foreground"}`}
               >
-                <item.icon className="h-4 w-4 text-emerald-400" />
+                <item.icon className="h-4 w-4" />
                 {item.label}
               </Button>
             </Link>

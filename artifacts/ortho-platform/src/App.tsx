@@ -121,7 +121,7 @@ function AppInner() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="dark" storageKey="orthovision-theme">
+      <ThemeProvider defaultTheme="light" storageKey="orthovision-theme">
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
             <AuthProvider>

@@ -8,7 +8,6 @@ import { useLogin } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
@@ -54,72 +53,70 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-zinc-950 p-4">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/20 via-zinc-950 to-zinc-950"></div>
-      
-      <div className="z-10 w-full max-w-md space-y-8">
-        <div className="flex flex-col items-center space-y-2 text-center">
-          <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20">
-            <Activity className="h-8 w-8 text-primary" />
+    <div className="min-h-screen w-full flex items-center justify-center bg-[#FAFAFA] p-4">
+      <div className="w-full max-w-md space-y-8">
+        <div className="flex flex-col items-center space-y-3 text-center">
+          <div className="h-14 w-14 rounded-2xl bg-foreground flex items-center justify-center shadow-sm">
+            <Activity className="h-7 w-7 text-background" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-white">OrthoVision</h1>
-          <p className="text-zinc-400">Clinical precision planning platform</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">OrthoVision</h1>
+          <p className="text-muted-foreground text-sm">Clinical precision planning platform</p>
         </div>
 
-        <Card className="border-zinc-800 bg-zinc-900/50 backdrop-blur-xl shadow-2xl">
-          <CardHeader>
-            <CardTitle className="text-white">Doctor Login</CardTitle>
-            <CardDescription className="text-zinc-400">Enter your credentials to access your workspace.</CardDescription>
+        <Card className="border border-border shadow-md bg-white">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-foreground text-lg font-semibold">Doctor Login</CardTitle>
+            <CardDescription className="text-muted-foreground">Enter your credentials to access your workspace.</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
                 <FormField
                   control={form.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-zinc-300">Email Address</FormLabel>
+                      <FormLabel className="text-foreground text-sm font-medium">Email Address</FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Mail className="absolute left-3 top-3 h-4 w-4 text-zinc-500" />
-                          <Input 
-                            placeholder="doctor@clinic.com" 
-                            className="pl-10 bg-zinc-950/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-primary" 
-                            {...field} 
+                          <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="doctor@clinic.com"
+                            className="pl-10 bg-background border-border text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-foreground/20"
+                            {...field}
                           />
                         </div>
                       </FormControl>
-                      <FormMessage className="text-red-400" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-zinc-300">Password</FormLabel>
+                      <FormLabel className="text-foreground text-sm font-medium">Password</FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Lock className="absolute left-3 top-3 h-4 w-4 text-zinc-500" />
-                          <Input 
-                            type="password" 
-                            placeholder="••••••••" 
-                            className="pl-10 bg-zinc-950/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-primary" 
-                            {...field} 
+                          <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            type="password"
+                            placeholder="••••••••"
+                            className="pl-10 bg-background border-border text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-foreground/20"
+                            {...field}
                           />
                         </div>
                       </FormControl>
-                      <FormMessage className="text-red-400" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <Button 
-                  type="submit" 
-                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all font-medium"
+                <Button
+                  type="submit"
+                  className="w-full font-medium mt-2"
                   disabled={loginMutation.isPending}
                 >
                   {loginMutation.isPending ? (
@@ -131,8 +128,8 @@ export default function Login() {
             </Form>
           </CardContent>
         </Card>
-        
-        <p className="text-center text-xs text-zinc-500">
+
+        <p className="text-center text-xs text-muted-foreground">
           Secure, HIPAA-compliant environment
         </p>
       </div>
