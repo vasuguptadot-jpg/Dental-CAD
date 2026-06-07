@@ -238,7 +238,7 @@ export default function SegmentationViewer() {
 
   // Load original geometry for analysis
   const loadOriginalGeometry = async (): Promise<THREE.BufferGeometry> => {
-    const response = await fetch(`/api/scans/${scanId}/file`);
+    const response = await fetch(`/api/scans/${scanId}/file`, { credentials: "include" });
     if (!response.ok) throw new Error("Failed to download scan file");
     
     const arrayBuffer = await response.arrayBuffer();

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, Plus, UserPlus, Loader2, FileText } from "lucide-react";
+import { Search, Plus, UserPlus, Loader2, FileText, Users } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -264,5 +264,3 @@ function AddPatientDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
   );
 }
 
-// Add a dummy Users icon import for the empty state
-import { Users } from "lucide-react";

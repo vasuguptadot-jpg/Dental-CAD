@@ -68,7 +68,7 @@ export default function Dashboard() {
           />
           <StatCard
             title="Scans Uploaded"
-            value={stats?.totalScans}
+            value={stats?.scansUploaded}
             icon={<Upload className="h-4 w-4 text-muted-foreground" />}
             isLoading={statsLoading}
           />
@@ -86,7 +86,7 @@ export default function Dashboard() {
                 <Skeleton className="h-64 w-full" />
               ) : (
                 <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={breakdownData?.breakdown ?? []} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                  <BarChart data={breakdownData ?? []} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis
                       dataKey="status"
@@ -99,7 +99,7 @@ export default function Dashboard() {
                       labelFormatter={formatStatus}
                     />
                     <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                      {(breakdownData?.breakdown ?? []).map((entry: any) => (
+                      {(breakdownData ?? []).map((entry: any) => (
                         <Cell key={entry.status} fill={STATUS_COLORS[entry.status] ?? "hsl(var(--primary))"} />
                       ))}
                     </Bar>
@@ -120,11 +120,11 @@ export default function Dashboard() {
                 <div className="space-y-3">
                   {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
                 </div>
-              ) : activityData?.activity?.length === 0 ? (
+              ) : activityData?.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-6">No recent activity</p>
               ) : (
                 <div className="space-y-3">
-                  {activityData?.activity?.map((item: any) => (
+                  {activityData?.map((item: any) => (
                     <div key={item.id} className="flex gap-3 text-sm border-b pb-3 last:border-0 last:pb-0">
                       <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
                       <div className="flex-1 min-w-0">

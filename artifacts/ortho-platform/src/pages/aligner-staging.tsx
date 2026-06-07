@@ -157,7 +157,7 @@ export default function AlignerStaging() {
     setLoadProgress(5);
 
     try {
-      const response = await fetch(`/api/scans/${scanId}/file`);
+      const response = await fetch(`/api/scans/${scanId}/file`, { credentials: "include" });
       if (!response.ok) throw new Error("Failed to load scan file");
       const buf = await response.arrayBuffer();
 
@@ -359,6 +359,7 @@ export default function AlignerStaging() {
       const res = await fetch("/api/ai-copilot/treatment-simulation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           totalStages: prediction.totalStages,
           estimatedMonths: prediction.estimatedMonths,

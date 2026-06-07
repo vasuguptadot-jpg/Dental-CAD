@@ -237,7 +237,7 @@ export default function TreatmentPlanner() {
 
     try {
       // Load file
-      const response = await fetch(`/api/scans/${scanId}/file`);
+      const response = await fetch(`/api/scans/${scanId}/file`, { credentials: "include" });
       if (!response.ok) throw new Error("Failed to load scan");
       const buf = await response.arrayBuffer();
 
@@ -606,6 +606,7 @@ export default function TreatmentPlanner() {
       const res = await fetch("/api/ai-copilot/collision-safety", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ collisions, scanId }),
       });
 

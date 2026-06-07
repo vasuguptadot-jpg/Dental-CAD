@@ -626,9 +626,8 @@ function UploadScanDialog({ caseId }: { caseId: number }) {
 
     const xhr = new XMLHttpRequest();
     xhr.open("POST", `/api/cases/${caseId}/scans/upload`, true);
-    
-    // Add auth if needed, but cookies should be sent automatically with standard config
-    
+    xhr.withCredentials = true;
+
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) {
         setProgress(Math.round((e.loaded / e.total) * 100));

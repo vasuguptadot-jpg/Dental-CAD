@@ -215,6 +215,7 @@ export default function AICopilot() {
       const response = await fetch("/api/ai-copilot/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ messages: allMessages, contextData }),
       });
 
@@ -274,6 +275,7 @@ export default function AICopilot() {
       const res = await fetch("/api/ai-copilot/treatment-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ contextData }),
       });
 

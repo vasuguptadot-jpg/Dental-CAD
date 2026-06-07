@@ -116,7 +116,7 @@ export default function ScanViewer() {
           if (cached.indices) geometry.setIndex(new THREE.BufferAttribute(cached.indices, 1));
         } else {
           // Fetch raw file
-          const response = await fetch(`/api/scans/${scanId}/file`);
+          const response = await fetch(`/api/scans/${scanId}/file`, { credentials: "include" });
           if (!response.ok) throw new Error("Failed to download scan file");
           
           const arrayBuffer = await response.arrayBuffer();

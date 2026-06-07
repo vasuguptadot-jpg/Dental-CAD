@@ -164,7 +164,7 @@ export default function OrthoAnalysis() {
   }, [analysisData, status]);
 
   const loadGeometry = async (): Promise<THREE.BufferGeometry> => {
-    const response = await fetch(`/api/scans/${scanId}/file`);
+    const response = await fetch(`/api/scans/${scanId}/file`, { credentials: "include" });
     if (!response.ok) throw new Error("Failed to load scan file");
     const buf = await response.arrayBuffer();
     let geo: THREE.BufferGeometry | null = null;
