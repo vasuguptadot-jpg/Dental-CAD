@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link } from "wouter";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { Layout } from "@/components/layout";
 import { useListPatients, useCreatePatient, getListPatientsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -31,7 +32,15 @@ export default function PatientsList() {
   const [page, setPage] = useState(1);
   const [isAddOpen, setIsAddOpen] = useState(false);
   
-  const { data, isLoading } = useListPatients({ search: debouncedSearch, page, limit: 20 });
+  const { data, isLoading } = useListPatients({ search: debouncedSearch, page, limit: 50 });
+  const patients = data?.patients ?? [];
+  const listRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: patients.length,
+    getScrollElement: () => listRef.current,
+    estimateSize: () => 52,
+    overscan: 8,
+  });
 
   return (
     <Layout>
@@ -70,48 +79,51 @@ export default function PatientsList() {
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-32 text-center">
-                      <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
-                    </TableCell>
-                  </TableRow>
-                ) : data?.patients.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-32 text-center">
-                      <div className="flex flex-col items-center justify-center text-muted-foreground">
-                        <Users className="h-8 w-8 mb-2 opacity-50" />
-                        <p>No patients found</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  data?.patients.map((patient) => (
-                    <TableRow key={patient.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
-                      <TableCell className="font-mono text-xs font-medium text-muted-foreground">
-                        {patient.patientCode}
-                      </TableCell>
-                      <TableCell className="font-medium">{patient.fullName}</TableCell>
-                      <TableCell className="hidden md:table-cell text-muted-foreground">
-                        {patient.age} • {patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1)}
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell text-muted-foreground">
-                        {patient.mobileNumber}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Link href={`/patients/${patient.id}`}>
-                          <Button variant="ghost" size="sm" className="gap-2 text-primary hover:text-primary hover:bg-primary/10">
-                            <FileText className="h-4 w-4" />
-                            View Detail
-                          </Button>
-                        </Link>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
             </Table>
+            {isLoading ? (
+              <div className="h-32 flex items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : patients.length === 0 ? (
+              <div className="h-32 flex flex-col items-center justify-center text-muted-foreground">
+                <Users className="h-8 w-8 mb-2 opacity-50" />
+                <p>No patients found</p>
+              </div>
+            ) : (
+              <div
+                ref={listRef}
+                className="overflow-auto"
+                style={{ height: Math.min(patients.length * 52, 520) }}
+              >
+                <div style={{ height: rowVirtualizer.getTotalSize(), position: "relative" }}>
+                  {rowVirtualizer.getVirtualItems().map(virtualRow => {
+                    const patient = patients[virtualRow.index];
+                    return (
+                      <div
+                        key={patient.id}
+                        style={{ position: "absolute", top: virtualRow.start, left: 0, right: 0, height: 52 }}
+                        className="flex items-center border-b border-border px-4 hover:bg-muted/50 transition-colors"
+                      >
+                        <span className="font-mono text-xs text-muted-foreground w-[120px] shrink-0">{patient.patientCode}</span>
+                        <span className="font-medium flex-1 min-w-0 truncate">{patient.fullName}</span>
+                        <span className="hidden md:block text-sm text-muted-foreground w-36 shrink-0">
+                          {patient.age} • {patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1)}
+                        </span>
+                        <span className="hidden sm:block text-sm text-muted-foreground w-36 shrink-0">{patient.mobileNumber}</span>
+                        <div className="ml-auto shrink-0">
+                          <Link href={`/patients/${patient.id}`}>
+                            <Button variant="ghost" size="sm" className="gap-2 text-primary hover:text-primary hover:bg-primary/10">
+                              <FileText className="h-4 w-4" />
+                              View Detail
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

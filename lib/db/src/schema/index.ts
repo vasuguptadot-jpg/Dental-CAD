@@ -5,3 +5,4 @@ export * from "./scans";
 export * from "./activity";
 export * from "./scan-analysis";
 export * from "./photos";
+export * from "./case-notes";

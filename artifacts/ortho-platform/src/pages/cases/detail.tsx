@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, ArrowLeft, Upload, Box, Settings, CheckCircle2, ChevronRight, File, Brain, Camera, ImageIcon, Trash2, TrendingUp, GitCompare, Scale, Scissors } from "lucide-react";
+import { Loader2, ArrowLeft, Upload, Box, Settings, CheckCircle2, ChevronRight, File, Brain, Camera, ImageIcon, Trash2, TrendingUp, GitCompare, Scale, Scissors, MessageSquare, Send, Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -195,6 +195,7 @@ export default function CaseDetail() {
             <TabsList className="mb-4">
               <TabsTrigger value="scans" className="gap-2"><Box className="h-3.5 w-3.5" /> 3D Scans</TabsTrigger>
               <TabsTrigger value="photos" className="gap-2"><Camera className="h-3.5 w-3.5" /> Photos</TabsTrigger>
+              <TabsTrigger value="notes" className="gap-2"><MessageSquare className="h-3.5 w-3.5" /> Case Notes</TabsTrigger>
             </TabsList>
             <TabsContent value="scans">
           <Card className="lg:col-span-2">
@@ -274,11 +275,134 @@ export default function CaseDetail() {
             <TabsContent value="photos">
               <PhotosPanel caseId={caseId} />
             </TabsContent>
+            <TabsContent value="notes">
+              <CaseNotesPanel caseId={caseId} />
+            </TabsContent>
           </Tabs>
           </div>
         </div>
       </div>
     </Layout>
+  );
+}
+
+function CaseNotesPanel({ caseId }: { caseId: number }) {
+  const [notes, setNotes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [newNote, setNewNote] = useState("");
+  const [noteType, setNoteType] = useState("clinical");
+  const [submitting, setSubmitting] = useState(false);
+  const { toast } = useToast();
+
+  const loadNotes = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/cases/${caseId}/notes`, { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setNotes(data);
+      }
+    } catch { /* ignore */ }
+    setLoading(false);
+  };
+
+  useEffect(() => { loadNotes(); }, [caseId]);
+
+  const handleSubmit = async () => {
+    if (!newNote.trim()) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/cases/${caseId}/notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ content: newNote.trim(), noteType }),
+      });
+      if (res.ok) {
+        toast({ title: "Note added" });
+        setNewNote("");
+        loadNotes();
+      } else {
+        toast({ variant: "destructive", title: "Failed to add note" });
+      }
+    } catch {
+      toast({ variant: "destructive", title: "Network error" });
+    }
+    setSubmitting(false);
+  };
+
+  const NOTE_TYPE_COLORS: Record<string, string> = {
+    clinical: "bg-blue-500/20 text-blue-400",
+    administrative: "bg-amber-500/20 text-amber-400",
+    lab: "bg-purple-500/20 text-purple-400",
+    patient: "bg-green-500/20 text-green-400",
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <MessageSquare className="h-5 w-5" /> Case Notes & Assignments
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <Select value={noteType} onValueChange={setNoteType}>
+              <SelectTrigger className="w-36 h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="clinical">Clinical</SelectItem>
+                <SelectItem value="administrative">Administrative</SelectItem>
+                <SelectItem value="lab">Lab Note</SelectItem>
+                <SelectItem value="patient">Patient Instruction</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex-1 flex gap-2">
+              <Textarea
+                value={newNote}
+                onChange={e => setNewNote(e.target.value)}
+                placeholder="Add a case note…"
+                className="h-9 min-h-0 resize-none py-2"
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
+              />
+              <Button size="icon" onClick={handleSubmit} disabled={submitting || !newNote.trim()}>
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
+        </div>
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : notes.length === 0 ? (
+          <div className="text-center py-10 text-muted-foreground border border-dashed rounded-lg">
+            <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-20" />
+            <p className="text-sm">No notes yet. Add the first one above.</p>
+          </div>
+        ) : (
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {notes.map((note: any) => (
+              <div key={note.id} className="flex gap-3 p-3 bg-muted/30 rounded-lg border">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${NOTE_TYPE_COLORS[note.noteType] ?? "bg-muted text-muted-foreground"}`}>
+                      {note.noteType}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {note.authorName ?? "You"} · {new Date(note.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="text-sm whitespace-pre-wrap">{note.content}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

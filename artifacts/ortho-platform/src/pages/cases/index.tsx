@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link } from "wouter";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { Layout } from "@/components/layout";
 import { useListCases } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -61,16 +62,24 @@ export default function CasesList() {
   const { data, isLoading } = useListCases({
     status: statusFilter !== "all" ? statusFilter : undefined,
     page,
-    limit: 20
+    limit: 50,
   });
 
   const filtered = debouncedSearch
-    ? (data?.cases ?? []).filter(c =>
+    ? (data?.cases ?? []).filter((c: any) =>
         c.title?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
         c.caseCode?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
         c.patientName?.toLowerCase().includes(debouncedSearch.toLowerCase())
       )
     : (data?.cases ?? []);
+
+  const listRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: filtered.length,
+    getScrollElement: () => listRef.current,
+    estimateSize: () => 52,
+    overscan: 8,
+  });
 
   return (
     <Layout>
@@ -120,46 +129,48 @@ export default function CasesList() {
                 <p>No cases found</p>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Case Code</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Patient</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map(c => (
-                    <TableRow key={c.id} className="cursor-pointer hover:bg-muted/40">
-                      <TableCell>
-                        <Link href={`/cases/${c.id}`}>
-                          <span className="font-mono text-sm text-primary hover:underline">{c.caseCode}</span>
-                        </Link>
-                      </TableCell>
-                      <TableCell>
-                        <Link href={`/cases/${c.id}`}>
-                          <span className="font-medium hover:underline">{c.title}</span>
-                        </Link>
-                      </TableCell>
-                      <TableCell>
-                        <Link href={`/patients/${c.patientId}`}>
-                          <span className="text-muted-foreground hover:text-foreground hover:underline">{c.patientName}</span>
-                        </Link>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={`text-xs ${STATUS_COLORS[c.status] ?? "bg-muted text-muted-foreground"}`}>
-                          {formatStatus(c.status)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(c.createdAt).toLocaleDateString()}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <>
+                <div className="grid grid-cols-5 gap-4 px-4 py-2 border-b bg-muted/30 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <span>Case Code</span>
+                  <span className="col-span-2">Title</span>
+                  <span>Status</span>
+                  <span>Created</span>
+                </div>
+                <div
+                  ref={listRef}
+                  className="overflow-auto"
+                  style={{ height: Math.min(filtered.length * 52, 540) }}
+                >
+                  <div style={{ height: rowVirtualizer.getTotalSize(), position: "relative" }}>
+                    {rowVirtualizer.getVirtualItems().map(vRow => {
+                      const c = filtered[vRow.index];
+                      return (
+                        <div
+                          key={c.id}
+                          style={{ position: "absolute", top: vRow.start, left: 0, right: 0, height: 52 }}
+                          className="grid grid-cols-5 gap-4 px-4 items-center border-b border-border hover:bg-muted/40 transition-colors"
+                        >
+                          <Link href={`/cases/${c.id}`}>
+                            <span className="font-mono text-sm text-primary hover:underline">{c.caseCode}</span>
+                          </Link>
+                          <div className="col-span-2 min-w-0">
+                            <Link href={`/cases/${c.id}`}>
+                              <span className="font-medium hover:underline truncate block">{c.title}</span>
+                            </Link>
+                            <Link href={`/patients/${c.patientId}`}>
+                              <span className="text-xs text-muted-foreground hover:underline">{c.patientName}</span>
+                            </Link>
+                          </div>
+                          <Badge className={`text-xs w-fit ${STATUS_COLORS[c.status] ?? "bg-muted text-muted-foreground"}`}>
+                            {formatStatus(c.status)}
+                          </Badge>
+                          <span className="text-sm text-muted-foreground">{new Date(c.createdAt).toLocaleDateString()}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

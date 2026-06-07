@@ -25,6 +25,8 @@ import BoltonAnalysis from "@/pages/bolton-analysis";
 import IPRCalculator from "@/pages/ipr-calculator";
 import ProgressTracker from "@/pages/progress-tracker";
 import PlanComparison from "@/pages/plan-comparison";
+import AttachmentAdvisor from "@/pages/attachment-advisor";
+import PracticeAnalytics from "@/pages/practice-analytics";
 
 const queryClient = new QueryClient();
 
@@ -85,6 +87,8 @@ function Router() {
       <Route path="/progress/:caseId"><ProtectedRoute component={ProgressTracker} /></Route>
       <Route path="/plan-comparison"><ProtectedRoute component={PlanComparison} /></Route>
       <Route path="/plan-comparison/:caseId"><ProtectedRoute component={PlanComparison} /></Route>
+      <Route path="/attachment-advisor"><ProtectedRoute component={AttachmentAdvisor} /></Route>
+      <Route path="/practice-analytics"><ProtectedRoute component={PracticeAnalytics} /></Route>
 
       <Route component={NotFound} />
     </Switch>

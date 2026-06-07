@@ -10,6 +10,7 @@ import aiCopilotRouter from "./ai-copilot";
 import analyticsRouter from "./analytics";
 import searchRouter from "./search";
 import photosRouter from "./photos";
+import caseNotesRouter from "./case-notes";
 import { auditMiddleware } from "../middleware/audit";
 
 const router: IRouter = Router();
@@ -28,5 +29,6 @@ router.use("/", analysisRouter);
 router.use("/", aiCopilotRouter);
 router.use("/", searchRouter);
 router.use("/", photosRouter);
+router.use("/", caseNotesRouter);
 
 export default router;

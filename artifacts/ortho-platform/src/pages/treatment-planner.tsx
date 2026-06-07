@@ -14,7 +14,7 @@ import {
   ArrowLeft, Brain, Loader2, RotateCcw, Save, Download,
   Undo2, Redo2, AlertTriangle, CheckCircle, XCircle,
   Move, RotateCw, ZapOff, ShieldAlert, ChevronRight,
-  Layers, History, Settings2, Eye, Cpu
+  Layers, History, Settings2, Eye, Cpu, Sparkles
 } from "lucide-react";
 
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
@@ -507,6 +507,78 @@ export default function TreatmentPlanner() {
     toast({ title: "Treatment plan saved", description: `${plan.movements.length} movements exported.` });
   };
 
+  const [autoPlanning, setAutoPlanning] = useState(false);
+
+  const handleAutoGeneratePlan = async () => {
+    if (!analysisData || segments.length === 0) {
+      toast({ title: "No analysis data", description: "Run ortho analysis first to enable AI plan generation.", variant: "destructive" });
+      return;
+    }
+    setAutoPlanning(true);
+    try {
+      const toothSummary = segments.slice(0, 16).map(s => ({
+        fdi: s.fdiNumber,
+        label: FDI_NAMES[s.fdiNumber] ?? String(s.fdiNumber),
+        x: s.centroidX.toFixed(1),
+        y: s.centroidY.toFixed(1),
+        z: s.centroidZ.toFixed(1),
+      }));
+      const res = await fetch("/api/ai-copilot/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          scanId,
+          messages: [{
+            role: "user",
+            content: `You are an orthodontic treatment planning expert. Based on the following tooth positions, suggest a realistic starting treatment plan for a clear aligner case. For each tooth that needs movement, specify: fdi number, and small movement values (tx/ty/tz in mm, rx/ry/rz in degrees). Keep movements conservative (max 2mm translation, max 5 degrees rotation). Return ONLY a JSON array like: [{"fdi":13,"tx":0.5,"ty":0,"tz":0,"rx":0,"ry":0,"rz":3}]. No explanations.\n\nTooth positions: ${JSON.stringify(toothSummary)}`
+          }]
+        }),
+      });
+      if (!res.ok) throw new Error("AI request failed");
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value);
+          chunk.split("\n").forEach(line => {
+            if (line.startsWith("data: ") && !line.includes("[DONE]")) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                fullText += data.choices?.[0]?.delta?.content ?? "";
+              } catch { /* skip */ }
+            }
+          });
+        }
+      }
+      const jsonMatch = fullText.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) throw new Error("Could not parse AI response");
+      const suggestions: { fdi: number; tx: number; ty: number; tz: number; rx: number; ry: number; rz: number }[] = JSON.parse(jsonMatch[0]);
+      let applied = 0;
+      suggestions.forEach(s => {
+        if (!transforms.has(s.fdi)) return;
+        const current = transforms.get(s.fdi)!;
+        setTransforms(prev => new Map(prev).set(s.fdi, {
+          ...current,
+          tx: Math.max(-6, Math.min(6, s.tx || 0)),
+          ty: Math.max(-5, Math.min(5, s.ty || 0)),
+          tz: Math.max(-5, Math.min(5, s.tz || 0)),
+          rx: Math.max(-10, Math.min(10, s.rx || 0)),
+          ry: Math.max(-10, Math.min(10, s.ry || 0)),
+          rz: Math.max(-45, Math.min(45, s.rz || 0)),
+        }));
+        applied++;
+      });
+      toast({ title: `AI plan applied`, description: `${applied} teeth have suggested movements. Review and refine as needed.` });
+    } catch (err) {
+      toast({ title: "AI plan failed", description: String(err), variant: "destructive" });
+    }
+    setAutoPlanning(false);
+  };
+
   const handleSendToStaging = () => {
     const movedTransforms = Array.from(transforms.values()).filter(t =>
       Object.entries(t).some(([k, v]) => k !== "fdiNumber" && Math.abs(v as number) > 0.05)
@@ -596,6 +668,9 @@ export default function TreatmentPlanner() {
             <Redo2 className="h-4 w-4" />
           </Button>
           <Separator orientation="vertical" className="h-5 bg-zinc-700" />
+          <Button size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 gap-1" onClick={handleAutoGeneratePlan} disabled={status !== "ready" || autoPlanning}>
+            {autoPlanning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}AI Plan
+          </Button>
           <Button size="sm" className="h-7 text-xs bg-violet-600 hover:bg-violet-700 gap-1" onClick={handleSavePlan} disabled={status !== "ready"}>
             <Download className="h-3 w-3" />Save Plan
           </Button>

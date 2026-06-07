@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { runSegmentation, serializeSegments, type ToothSegment } from "@/lib/segmentation-engine";
+import { checkScanQuality, qualityBadgeColor, qualityLabel, type ScanQualityReport } from "@/lib/scan-quality";
 import { detectLandmarks, serializeLandmarks, type ToothLandmarks, type Landmark } from "@/lib/landmark-engine";
 import { calculateMeasurements, serializeMeasurements, type MeasurementSet } from "@/lib/measurement-engine";
 import { generateReportHTML } from "@/lib/report-generator";
@@ -63,6 +64,7 @@ export default function SegmentationViewer() {
   const [selectedToothFdi, setSelectedToothFdi] = useState<number | null>(null);
   const [showLandmarks, setShowLandmarks] = useState(true);
   const [has3DData, setHas3DData] = useState(true);
+  const [qualityReport, setQualityReport] = useState<ScanQualityReport | null>(null);
 
   // Three.js refs
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -284,6 +286,10 @@ export default function SegmentationViewer() {
 
       // Fetch and show original in wireframe
       const geometry = await loadOriginalGeometry();
+
+      // Run quality check
+      const qr = checkScanQuality(geometry);
+      setQualityReport(qr);
       
       const origMat = new THREE.MeshPhongMaterial({
         color: 0x8ecfff,
@@ -451,6 +457,14 @@ export default function SegmentationViewer() {
         </div>
 
         <div className="flex items-center gap-2">
+          {qualityReport && (
+            <div
+              title={`Scan Quality: ${qualityLabel(qualityReport.score)} (${qualityReport.score}/100) — ${qualityReport.vertexCount.toLocaleString()} vertices, ${qualityReport.issues.length} issues`}
+              className={`text-xs px-2 py-1 rounded-full font-mono border cursor-default ${qualityBadgeColor(qualityReport.score)}`}
+            >
+              QC {qualityReport.score}/100
+            </div>
+          )}
           {status === "idle" || status === "error" ? (
             <Button size="sm" onClick={handleRunAnalysis} className="h-8 bg-cyan-600 hover:bg-cyan-700 text-white gap-2">
               <Brain className="h-4 w-4" /> Run Analysis

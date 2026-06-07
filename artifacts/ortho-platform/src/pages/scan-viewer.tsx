@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three-stdlib";
 import { STLLoader, OBJLoader, PLYLoader } from "three-stdlib";
 import { useGetScan, getGetScanQueryKey } from "@workspace/api-client-react";
+import { getCachedGeometry, cacheGeometry } from "@/lib/geometry-cache";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Loader2, Maximize, Ruler, RotateCcw, Box } from "lucide-react";
@@ -102,41 +103,67 @@ export default function ScanViewer() {
     const loadModel = async () => {
       try {
         setLoading(true);
-        // Fetch raw file
-        const response = await fetch(`/api/scans/${scanId}/file`);
-        if (!response.ok) throw new Error("Failed to download scan file");
-        
-        const arrayBuffer = await response.arrayBuffer();
-        
         let geometry: THREE.BufferGeometry | null = null;
-        
-        if (scanData.fileType === "stl") {
-          const loader = new STLLoader();
-          geometry = loader.parse(arrayBuffer);
-        } else if (scanData.fileType === "obj") {
-          const loader = new OBJLoader();
-          const textDecoder = new TextDecoder("utf-8");
-          const text = textDecoder.decode(arrayBuffer);
-          const group = loader.parse(text);
-          // Extract first geometry
-          group.traverse((child) => {
-            if (child instanceof THREE.Mesh && !geometry) {
-              geometry = child.geometry;
-            }
-          });
-        } else if (scanData.fileType === "ply") {
-          const loader = new PLYLoader();
-          geometry = loader.parse(arrayBuffer);
+
+        // Try geometry cache first
+        const cacheKey = `scan-${scanId}-${scanData.fileType}`;
+        const cached = await getCachedGeometry(cacheKey);
+
+        if (cached) {
+          geometry = new THREE.BufferGeometry();
+          geometry.setAttribute("position", new THREE.BufferAttribute(cached.positions, 3));
+          if (cached.normals) geometry.setAttribute("normal", new THREE.BufferAttribute(cached.normals, 3));
+          if (cached.indices) geometry.setIndex(new THREE.BufferAttribute(cached.indices, 1));
+        } else {
+          // Fetch raw file
+          const response = await fetch(`/api/scans/${scanId}/file`);
+          if (!response.ok) throw new Error("Failed to download scan file");
+          
+          const arrayBuffer = await response.arrayBuffer();
+          
+          if (scanData.fileType === "stl") {
+            const loader = new STLLoader();
+            geometry = loader.parse(arrayBuffer);
+          } else if (scanData.fileType === "obj") {
+            const loader = new OBJLoader();
+            const textDecoder = new TextDecoder("utf-8");
+            const text = textDecoder.decode(arrayBuffer);
+            const group = loader.parse(text);
+            group.traverse((child) => {
+              if (child instanceof THREE.Mesh && !geometry) {
+                geometry = child.geometry;
+              }
+            });
+          } else if (scanData.fileType === "ply") {
+            const loader = new PLYLoader();
+            geometry = loader.parse(arrayBuffer);
+          }
+
+          // Cache after successful parse
+          if (geometry) {
+            const pos = (geometry.attributes.position?.array as Float32Array)?.slice();
+            const nor = (geometry.attributes.normal?.array as Float32Array | undefined)?.slice();
+            const idx = geometry.index ? (geometry.index.array as Uint32Array)?.slice() : undefined;
+            if (pos) cacheGeometry(cacheKey, pos, nor, idx);
+          }
         }
 
         if (geometry) {
           geometry.computeVertexNormals();
-          // Center geometry
           geometry.center();
           
           const mesh = new THREE.Mesh(geometry, material);
           meshRef.current = mesh;
           scene.add(mesh);
+
+          // LOD: adjust drawRange based on camera distance
+          const totalCount = geometry.index ? geometry.index.count : (geometry.attributes.position?.count ?? 0) * 3;
+          controls.addEventListener("change", () => {
+            const dist = camera.position.length();
+            const sphere = geometry!.boundingSphere?.radius ?? 50;
+            const lodRatio = dist > sphere * 10 ? 0.25 : dist > sphere * 5 ? 0.5 : dist > sphere * 2.5 ? 0.75 : 1.0;
+            geometry!.setDrawRange(0, Math.floor(totalCount * lodRatio));
+          });
 
           // Auto-fit camera
           geometry.computeBoundingSphere();

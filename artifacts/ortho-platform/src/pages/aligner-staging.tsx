@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRoute, Link, useLocation } from "wouter";
+import { generateAlignerPDF, type AlignerStageData } from "@/lib/pdf-booklet";
 import * as THREE from "three";
 import { OrbitControls } from "three-stdlib";
 import { STLLoader, OBJLoader, PLYLoader } from "three-stdlib";
@@ -804,6 +805,36 @@ export default function AlignerStaging() {
 
                     <Button className="w-full h-7 text-xs bg-zinc-800 hover:bg-zinc-700 gap-1" onClick={downloadReport}>
                       <FileText className="h-3 w-3" />Download Full Report
+                    </Button>
+                    <Button
+                      className="w-full h-7 text-xs bg-rose-900/60 hover:bg-rose-800/80 gap-1 border border-rose-700/40"
+                      onClick={() => {
+                        try {
+                          const totalStages = stages.length;
+                          const pdfStages: AlignerStageData[] = stages.map((s, i) => ({
+                            stageNumber: i,
+                            totalStages,
+                            weeksWear: 2,
+                            toothMovements: s.transforms.map(t => ({
+                              fdi: t.fdiNumber,
+                              label: String(t.fdiNumber),
+                              tx: t.tx,
+                              ty: t.ty,
+                              tz: t.tz,
+                              rx: t.rx,
+                              ry: t.ry,
+                              rz: t.rz,
+                            })),
+                          }));
+                          const pdf = generateAlignerPDF(pdfStages);
+                          pdf.save(`aligner-booklet-scan-${scanId}.pdf`);
+                          toast({ title: "PDF Booklet downloaded" });
+                        } catch (e) {
+                          toast({ title: "PDF export failed", description: String(e), variant: "destructive" });
+                        }
+                      }}
+                    >
+                      <Download className="h-3 w-3" />PDF Booklet
                     </Button>
                   </>
                 )}

@@ -5,7 +5,8 @@ import { useLogout } from "@workspace/api-client-react";
 import {
   Activity, LayoutDashboard, Users, UserSquare2, LogOut, Loader2,
   Moon, Sun, Brain, Bot, Layers, Cpu, Printer, BarChart3,
-  Scale, Scissors, TrendingUp, GitCompare, Camera, Keyboard, HelpCircle
+  Scale, Scissors, TrendingUp, GitCompare, Camera, Keyboard, HelpCircle,
+  Paperclip, LineChart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme-provider";
@@ -60,6 +61,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { label: "IPR Calculator", href: "/ipr-calculator", icon: Scissors },
     { label: "Progress Tracker", href: "/progress-tracker", icon: TrendingUp },
     { label: "Plan Comparison", href: "/plan-comparison", icon: GitCompare },
+    { label: "Attachment Advisor", href: "/attachment-advisor", icon: Paperclip },
+    { label: "Practice Analytics", href: "/practice-analytics", icon: LineChart },
   ];
 
   const isActive = (href: string) => location.startsWith(href);
