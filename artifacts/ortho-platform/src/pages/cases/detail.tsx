@@ -205,6 +205,9 @@ export default function CaseDetail() {
                         <Link href={`/aligner-staging/${scan.id}`} className="flex-1 bg-muted p-2 flex items-center justify-center text-xs font-medium text-cyan-400 hover:bg-cyan-600 hover:text-white transition-colors">
                           Staging
                         </Link>
+                        <Link href={`/manufacturing/${scan.id}`} className="flex-1 bg-muted p-2 flex items-center justify-center text-xs font-medium text-orange-400 hover:bg-orange-600 hover:text-white transition-colors">
+                          Manufacture
+                        </Link>
                       </div>
                     </div>
                   ))}

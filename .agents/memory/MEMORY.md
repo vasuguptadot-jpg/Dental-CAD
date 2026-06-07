@@ -1,1 +1,3 @@
 - [Groq Integration](groq-integration.md) — Groq API via native fetch (OpenAI-compatible), GROQ_API_KEY secret, llama-3.3-70b-versatile, SSE streaming in ai-copilot route.
+- [AlignerStage Interface](aligner-stage-interface.md) — AlignerStage has only: stageNumber, progress, transforms, activeTeeth[], notes[]. No phase/weeksWear/teethMoved/maxMovementMm. Must derive via stageStats() helper using progress and transforms.
+- [Mesh Export](mesh-export.md) — STL/OBJ export + mesh validation in lib/mesh-validation.ts; no external exporter needed. jszip installed in ortho-platform for ZIP batch export.
