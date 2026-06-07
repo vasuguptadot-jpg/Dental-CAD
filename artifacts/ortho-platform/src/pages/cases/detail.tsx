@@ -199,6 +199,9 @@ export default function CaseDetail() {
                         <Link href={`/ai-copilot/${scan.id}`} className="flex-1 bg-muted p-2 flex items-center justify-center text-xs font-medium text-emerald-400 hover:bg-emerald-600 hover:text-white transition-colors">
                           AI Copilot
                         </Link>
+                        <Link href={`/treatment-planner/${scan.id}`} className="flex-1 bg-muted p-2 flex items-center justify-center text-xs font-medium text-violet-400 hover:bg-violet-600 hover:text-white transition-colors">
+                          Planner
+                        </Link>
                       </div>
                     </div>
                   ))}

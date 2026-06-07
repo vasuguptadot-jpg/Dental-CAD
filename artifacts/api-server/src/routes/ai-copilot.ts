@@ -304,4 +304,95 @@ Respond ONLY with valid JSON in this structure:
   }
 });
 
+// POST /api/ai-copilot/collision-safety — AI safety analysis for detected collisions
+router.post("/ai-copilot/collision-safety", async (req: Request, res: Response) => {
+  const apiKey = process.env["GROQ_API_KEY"];
+  if (!apiKey) {
+    res.status(500).json({ error: "GROQ_API_KEY not configured" });
+    return;
+  }
+
+  const { collisions, scanId } = req.body as {
+    collisions: Array<{ fdi: number; severity: string; pairs: number }>;
+    scanId?: number;
+  };
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+
+  const collisionSummary = collisions
+    .map((c) => `- Tooth ${c.fdi}: ${c.severity} (${c.pairs} contact pair${c.pairs !== 1 ? "s" : ""})`)
+    .join("\n");
+
+  const prompt = `As an expert orthodontic safety consultant, analyze the following tooth collisions detected during treatment planning simulation:
+
+${collisionSummary}
+
+For each collision or risk zone, provide:
+1. **Clinical Explanation**: What does this collision mean clinically?
+2. **Risks**: What are the clinical risks if left uncorrected?
+3. **Recommended Correction**: Specific movement adjustments to resolve the collision (include direction and approximate amount)
+4. **Alternative Approaches**: Other treatment approaches that avoid this issue
+
+Keep the response concise, clinically precise, and actionable. Format with clear sections.
+
+IMPORTANT: Remind the doctor that all movement corrections require clinical judgment and doctor approval before implementation.`;
+
+  try {
+    const response = await fetch(GROQ_API_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: prompt },
+        ],
+        max_tokens: 1500,
+        temperature: 0.25,
+        stream: true,
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      res.write(`data: ${JSON.stringify({ error: errText })}\n\n`);
+      res.end();
+      return;
+    }
+
+    const reader = response.body!.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("data: ")) continue;
+        const data = trimmed.slice(6);
+        if (data === "[DONE]") { res.write(`data: ${JSON.stringify({ done: true })}\n\n`); continue; }
+        try {
+          const parsed = JSON.parse(data) as { choices?: Array<{ delta?: { content?: string } }> };
+          const content = parsed.choices?.[0]?.delta?.content;
+          if (content) res.write(`data: ${JSON.stringify({ content })}\n\n`);
+        } catch { /* skip */ }
+      }
+    }
+
+    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    res.end();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
+    res.end();
+  }
+});
+
 export default router;
