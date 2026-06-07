@@ -17,6 +17,7 @@ import SegmentationViewer from "@/pages/segmentation";
 import OrthoAnalysis from "@/pages/ortho-analysis";
 import AICopilot from "@/pages/ai-copilot";
 import TreatmentPlanner from "@/pages/treatment-planner";
+import AlignerStaging from "@/pages/aligner-staging";
 
 const queryClient = new QueryClient();
 
@@ -71,6 +72,7 @@ function Router() {
       <Route path="/ai-copilot/:scanId"><ProtectedRoute component={AICopilot} /></Route>
       <Route path="/ai-copilot"><ProtectedRoute component={AICopilot} /></Route>
       <Route path="/treatment-planner/:scanId"><ProtectedRoute component={TreatmentPlanner} /></Route>
+      <Route path="/aligner-staging/:scanId"><ProtectedRoute component={AlignerStaging} /></Route>
 
       <Route component={NotFound} />
     </Switch>

@@ -395,4 +395,116 @@ IMPORTANT: Remind the doctor that all movement corrections require clinical judg
   }
 });
 
+// POST /api/ai-copilot/treatment-simulation — AI narrative for aligner staging
+router.post("/ai-copilot/treatment-simulation", async (req: Request, res: Response) => {
+  const apiKey = process.env["GROQ_API_KEY"];
+  if (!apiKey) { res.status(500).json({ error: "GROQ_API_KEY not configured" }); return; }
+
+  const {
+    totalStages, estimatedMonths, overallComplexity, successProbability,
+    refinementLikelihood, totalTeethMoved, difficultMovements, phases,
+  } = req.body as {
+    totalStages: number; estimatedMonths: number; overallComplexity: string;
+    successProbability: number; refinementLikelihood: number; totalTeethMoved: number;
+    difficultMovements: Array<{ fdi: number; label: string; factors: string[] }>;
+    phases: Array<{ label: string; stages: string; movement: string }>;
+  };
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+
+  const difficultSummary = difficultMovements.length > 0
+    ? difficultMovements.map(m => `  - Tooth ${m.fdi} (${m.label}): ${m.factors.join("; ")}`).join("\n")
+    : "  None identified";
+
+  const phasesSummary = phases.map(p => `  - ${p.label} (${p.stages}): ${p.movement}`).join("\n");
+
+  const prompt = `Analyze this orthodontic clear aligner treatment simulation and provide a comprehensive clinical assessment:
+
+TREATMENT OVERVIEW:
+- Total aligners: ${totalStages}
+- Estimated duration: ~${estimatedMonths} months
+- Overall complexity: ${overallComplexity.toUpperCase()}
+- Teeth being moved: ${totalTeethMoved}
+- Predicted success probability: ${successProbability}%
+- Refinement likelihood: ${refinementLikelihood}%
+
+TREATMENT PHASES:
+${phasesSummary}
+
+CHALLENGING MOVEMENTS IDENTIFIED:
+${difficultSummary}
+
+Please provide a detailed clinical analysis with these sections:
+
+**1. Treatment Prognosis**
+Explain why this treatment has a ${successProbability}% success probability. What factors support or limit success?
+
+**2. Phase-by-Phase Assessment**
+For each treatment phase, describe what is clinically happening and what the doctor should monitor.
+
+**3. Difficult Movement Analysis**
+For each challenging movement, explain the biomechanical difficulty, clinical risks, and strategies to optimize outcome.
+
+**4. Risk Factors**
+Identify the top 3–5 clinical risks in this treatment plan and how to mitigate them.
+
+**5. Optimization Recommendations**
+Specific, actionable recommendations to improve treatment efficiency and reduce the ${refinementLikelihood}% refinement likelihood.
+
+**6. Patient Monitoring Schedule**
+Suggested check-up frequency and what to monitor at each visit.
+
+Keep responses evidence-based and clinically precise. Always frame as advisory requiring professional judgment.`;
+
+  try {
+    const response = await fetch(GROQ_API_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages: [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: prompt }],
+        max_tokens: 2000, temperature: 0.2, stream: true,
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      res.write(`data: ${JSON.stringify({ error: err })}\n\n`);
+      res.end(); return;
+    }
+
+    const reader = response.body!.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+      for (const line of lines) {
+        const t = line.trim();
+        if (!t.startsWith("data: ")) continue;
+        const data = t.slice(6);
+        if (data === "[DONE]") { res.write(`data: ${JSON.stringify({ done: true })}\n\n`); continue; }
+        try {
+          const parsed = JSON.parse(data) as { choices?: Array<{ delta?: { content?: string } }> };
+          const content = parsed.choices?.[0]?.delta?.content;
+          if (content) res.write(`data: ${JSON.stringify({ content })}\n\n`);
+        } catch { /* skip */ }
+      }
+    }
+    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    res.end();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
+    res.end();
+  }
+});
+
 export default router;

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useRoute, Link } from "wouter";
+import { useRoute, Link, useLocation } from "wouter";
 import * as THREE from "three";
 import { OrbitControls } from "three-stdlib";
 import { STLLoader, OBJLoader, PLYLoader } from "three-stdlib";
@@ -14,7 +14,7 @@ import {
   ArrowLeft, Brain, Loader2, RotateCcw, Save, Download,
   Undo2, Redo2, AlertTriangle, CheckCircle, XCircle,
   Move, RotateCw, ZapOff, ShieldAlert, ChevronRight,
-  Layers, History, Settings2, Eye
+  Layers, History, Settings2, Eye, Cpu
 } from "lucide-react";
 
 import { runSegmentation, type ToothSegment } from "@/lib/segmentation-engine";
@@ -25,6 +25,7 @@ import {
   MovementHistory, serializeTreatmentPlan,
   type ToothTransform, type MovementWarning, type ToothMovementRecord, type HistoryEntry,
 } from "@/lib/tooth-movement-engine";
+import { saveTreatmentPlanToStorage } from "@/lib/aligner-staging-engine";
 import {
   runCollisionCheck, buildCollisionIndicators, buildSafeZoneIndicators,
   buildMovementArrows, computeBoundingSpheres,
@@ -70,6 +71,7 @@ function makeSliders(constraints: ReturnType<typeof getConstraints>): TransformS
 
 export default function TreatmentPlanner() {
   const [, params] = useRoute("/treatment-planner/:scanId");
+  const [, navigate] = useLocation();
   const scanId = params?.scanId ? parseInt(params.scanId, 10) : 0;
   const { toast } = useToast();
 
@@ -472,6 +474,19 @@ export default function TreatmentPlanner() {
     toast({ title: "Treatment plan saved", description: `${plan.movements.length} movements exported.` });
   };
 
+  const handleSendToStaging = () => {
+    const movedTransforms = Array.from(transforms.values()).filter(t =>
+      Object.entries(t).some(([k, v]) => k !== "fdiNumber" && Math.abs(v as number) > 0.05)
+    );
+    if (movedTransforms.length === 0) {
+      toast({ title: "No movements to stage", description: "Move at least one tooth before sending to staging.", variant: "destructive" });
+      return;
+    }
+    saveTreatmentPlanToStorage(scanId, Array.from(transforms.values()));
+    toast({ title: "Plan sent to Aligner Staging", description: `${movedTransforms.length} tooth movements saved.` });
+    navigate(`/aligner-staging/${scanId}`);
+  };
+
   const fetchAiSafety = async () => {
     if (!collisionReport || collisionReport.collisionCount === 0) return;
     setAiSafetyLoading(true);
@@ -550,6 +565,9 @@ export default function TreatmentPlanner() {
           <Separator orientation="vertical" className="h-5 bg-zinc-700" />
           <Button size="sm" className="h-7 text-xs bg-violet-600 hover:bg-violet-700 gap-1" onClick={handleSavePlan} disabled={status !== "ready"}>
             <Download className="h-3 w-3" />Save Plan
+          </Button>
+          <Button size="sm" className="h-7 text-xs bg-cyan-600 hover:bg-cyan-700 gap-1" onClick={handleSendToStaging} disabled={status !== "ready"}>
+            <Cpu className="h-3 w-3" />Stage Aligners
           </Button>
           {status !== "ready" && (
             <Button size="sm" className="h-7 text-xs bg-cyan-600 hover:bg-cyan-700 gap-1" onClick={loadAndBuild} disabled={!scanData || status === "loading"}>

@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 import { useLogout } from "@workspace/api-client-react";
-import { Activity, LayoutDashboard, Users, UserSquare2, LogOut, Loader2, Moon, Sun, Brain, Bot, Layers } from "lucide-react";
+import { Activity, LayoutDashboard, Users, UserSquare2, LogOut, Loader2, Moon, Sun, Brain, Bot, Layers, Cpu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme-provider";
 
@@ -44,6 +44,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { label: "Ortho Analysis", href: "/ortho-analysis", icon: Brain },
     { label: "AI Copilot", href: "/ai-copilot", icon: Bot },
     { label: "Treatment Planner", href: "/treatment-planner", icon: Layers },
+    { label: "Aligner Staging", href: "/aligner-staging", icon: Cpu },
   ];
 
   const isActive = (href: string) => location.startsWith(href);

@@ -202,6 +202,9 @@ export default function CaseDetail() {
                         <Link href={`/treatment-planner/${scan.id}`} className="flex-1 bg-muted p-2 flex items-center justify-center text-xs font-medium text-violet-400 hover:bg-violet-600 hover:text-white transition-colors">
                           Planner
                         </Link>
+                        <Link href={`/aligner-staging/${scan.id}`} className="flex-1 bg-muted p-2 flex items-center justify-center text-xs font-medium text-cyan-400 hover:bg-cyan-600 hover:text-white transition-colors">
+                          Staging
+                        </Link>
                       </div>
                     </div>
                   ))}
