@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRoute, Link } from "wouter";
+import { ScanPicker } from "@/components/scan-picker";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -161,6 +162,15 @@ function ConfidenceMeter({ value }: { value: number }) {
 export default function AICopilot() {
   const [, params] = useRoute("/ai-copilot/:scanId");
   const scanId = params?.scanId ? parseInt(params.scanId, 10) : 0;
+
+  if (!scanId) return (
+    <ScanPicker
+      targetPath="/ai-copilot"
+      title="AI Copilot"
+      description="AI-assisted orthodontic treatment planning and clinical analysis"
+      Icon={Bot}
+    />
+  );
 
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);

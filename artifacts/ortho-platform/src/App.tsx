@@ -79,8 +79,11 @@ function Router() {
       <Route path="/ai-copilot/:scanId"><ProtectedRoute component={AICopilot} /></Route>
       <Route path="/ai-copilot"><ProtectedRoute component={AICopilot} /></Route>
       <Route path="/treatment-planner/:scanId"><ProtectedRoute component={TreatmentPlanner} /></Route>
+      <Route path="/treatment-planner"><ProtectedRoute component={TreatmentPlanner} /></Route>
       <Route path="/aligner-staging/:scanId"><ProtectedRoute component={AlignerStaging} /></Route>
+      <Route path="/aligner-staging"><ProtectedRoute component={AlignerStaging} /></Route>
       <Route path="/manufacturing/:scanId"><ProtectedRoute component={Manufacturing} /></Route>
+      <Route path="/manufacturing"><ProtectedRoute component={Manufacturing} /></Route>
       <Route path="/analytics"><ProtectedRoute component={Analytics} /></Route>
 
       {/* Clinical Tools */}

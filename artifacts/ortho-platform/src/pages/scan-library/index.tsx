@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { Layout } from "@/components/layout";
+import { UploadScanDialog } from "@/components/scan-picker";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -154,6 +155,7 @@ export default function ScanLibrary() {
               Manage, organize, and pair intraoral scans by device, date, and arch
             </p>
           </div>
+          <UploadScanDialog onSuccess={() => qc.invalidateQueries({ queryKey: ["scan-library"] })} />
         </div>
 
         {/* Stats */}

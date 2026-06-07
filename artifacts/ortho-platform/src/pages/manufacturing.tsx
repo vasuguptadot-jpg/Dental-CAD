@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRoute, Link } from "wouter";
+import { ScanPicker } from "@/components/scan-picker";
 import * as THREE from "three";
 import { OrbitControls, STLLoader, OBJLoader, PLYLoader } from "three-stdlib";
 import JSZip from "jszip";
@@ -138,6 +139,15 @@ function QualityGauge({ score }: { score: number }) {
 export default function Manufacturing() {
   const [, params] = useRoute("/manufacturing/:scanId");
   const scanId = params?.scanId ? parseInt(params.scanId, 10) : 0;
+
+  if (!scanId) return (
+    <ScanPicker
+      targetPath="/manufacturing"
+      title="Manufacturing"
+      description="Aligner manufacturing pipeline, mesh validation, and export"
+      Icon={Printer}
+    />
+  );
 
   // Load state
   const [loadState, setLoadState] = useState<LoadState>("idle");

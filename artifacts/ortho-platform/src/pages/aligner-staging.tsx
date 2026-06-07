@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRoute, Link, useLocation } from "wouter";
+import { ScanPicker } from "@/components/scan-picker";
 import { generateAlignerPDF, type AlignerStageData } from "@/lib/pdf-booklet";
 import * as THREE from "three";
 import { OrbitControls } from "three-stdlib";
@@ -52,6 +53,16 @@ export default function AlignerStaging() {
   const [, params] = useRoute("/aligner-staging/:scanId");
   const [, navigate] = useLocation();
   const scanId = params?.scanId ? parseInt(params.scanId, 10) : 0;
+
+  if (!scanId) return (
+    <ScanPicker
+      targetPath="/aligner-staging"
+      title="Aligner Staging"
+      description="Stage-by-stage aligner sequence planning and movement simulation"
+      Icon={Cpu}
+    />
+  );
+
   const { toast } = useToast();
 
   // Three.js refs

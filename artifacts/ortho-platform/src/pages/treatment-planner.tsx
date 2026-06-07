@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRoute, Link, useLocation } from "wouter";
+import { ScanPicker } from "@/components/scan-picker";
 import * as THREE from "three";
 import { OrbitControls } from "three-stdlib";
 import { STLLoader, OBJLoader, PLYLoader } from "three-stdlib";
@@ -75,6 +76,16 @@ export default function TreatmentPlanner() {
   const [, params] = useRoute("/treatment-planner/:scanId");
   const [, navigate] = useLocation();
   const scanId = params?.scanId ? parseInt(params.scanId, 10) : 0;
+
+  if (!scanId) return (
+    <ScanPicker
+      targetPath="/treatment-planner"
+      title="Treatment Planner"
+      description="3D tooth movement planning with real-time collision detection"
+      Icon={Layers}
+    />
+  );
+
   const { toast } = useToast();
 
   // Three.js refs
