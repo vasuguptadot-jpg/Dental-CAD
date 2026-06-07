@@ -21,6 +21,8 @@ tags:
     description: Dashboard analytics
   - name: analysis
     description: AI tooth segmentation and landmark analysis
+  - name: security
+    description: Security analysis, vulnerability scanning, and resolution tasks
 
 paths:
   /healthz:
@@ -462,6 +464,104 @@ paths:
                 items:
                   $ref: "#/components/schemas/ActivityItem"
 
+  /security/scan-report:
+    get:
+      operationId: getSecurityScanReport
+      tags: [security]
+      summary: Get the full security scan report with all findings
+      responses:
+        "200":
+          description: Security scan report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecurityScanReport"
+
+  /security/threat-model:
+    get:
+      operationId: getSecurityThreatModel
+      tags: [security]
+      summary: Get the parsed threat model document
+      responses:
+        "200":
+          description: Threat model content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThreatModelResponse"
+
+  /security/analyze:
+    post:
+      operationId: analyzeFinding
+      tags: [security]
+      summary: Run LLM analysis on a specific security finding
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyzeFindingInput"
+      responses:
+        "200":
+          description: LLM analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FindingAnalysis"
+
+  /security/resolve:
+    post:
+      operationId: startResolutionTask
+      tags: [security]
+      summary: Start a background resolution task for a vulnerability
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResolutionTaskInput"
+      responses:
+        "201":
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResolutionTask"
+
+  /security/tasks:
+    get:
+      operationId: getResolutionTasks
+      tags: [security]
+      summary: Get all resolution tasks with progress
+      responses:
+        "200":
+          description: List of resolution tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ResolutionTask"
+
+  /security/tasks/{taskId}:
+    delete:
+      operationId: dismissResolutionTask
+      tags: [security]
+      summary: Dismiss a completed resolution task
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Dismissed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
   /dashboard/case-status-breakdown:
     get:
       operationId: getCaseStatusBreakdown
@@ -832,3 +932,156 @@ components:
           type: object
         measurementsData:
           type: object
+
+    SecurityFinding:
+      type: object
+      required: [id, source, severity, title, file, line, message, category]
+      properties:
+        id:
+          type: string
+        source:
+          type: string
+          enum: [sast, dependency, hounddog]
+        severity:
+          type: string
+          enum: [CRITICAL, HIGH, MEDIUM, LOW, INFO, moderate]
+        title:
+          type: string
+        file:
+          type: string
+        line:
+          type: integer
+        message:
+          type: string
+        category:
+          type: string
+        cveId:
+          type: ["string", "null"]
+        packageName:
+          type: ["string", "null"]
+        fixVersion:
+          type: ["string", "null"]
+        codeSnippet:
+          type: ["string", "null"]
+
+    SecurityScanReport:
+      type: object
+      required: [scannedAt, totalFindings, bySeverity, findings, depSummary]
+      properties:
+        scannedAt:
+          type: string
+        totalFindings:
+          type: integer
+        bySeverity:
+          type: object
+          properties:
+            critical: { type: integer }
+            high: { type: integer }
+            medium: { type: integer }
+            low: { type: integer }
+            info: { type: integer }
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/SecurityFinding"
+        depSummary:
+          type: object
+          properties:
+            critical: { type: integer }
+            high: { type: integer }
+            moderate: { type: integer }
+            low: { type: integer }
+            info: { type: integer }
+
+    ThreatModelResponse:
+      type: object
+      required: [content, sections]
+      properties:
+        content:
+          type: string
+        sections:
+          type: array
+          items:
+            type: object
+            required: [title, content]
+            properties:
+              title:
+                type: string
+              content:
+                type: string
+
+    AnalyzeFindingInput:
+      type: object
+      required: [findingId, finding]
+      properties:
+        findingId:
+          type: string
+        finding:
+          $ref: "#/components/schemas/SecurityFinding"
+
+    FindingAnalysis:
+      type: object
+      required: [findingId, riskLevel, summary, impact, rootCause, fix, effort, strideCategory]
+      properties:
+        findingId:
+          type: string
+        riskLevel:
+          type: string
+          enum: [CRITICAL, HIGH, MEDIUM, LOW]
+        summary:
+          type: string
+        impact:
+          type: string
+        rootCause:
+          type: string
+        fix:
+          type: string
+        codeExample:
+          type: ["string", "null"]
+        effort:
+          type: string
+          enum: [low, medium, high]
+        strideCategory:
+          type: string
+
+    ResolutionTaskInput:
+      type: object
+      required: [findingId, strategy]
+      properties:
+        findingId:
+          type: string
+        strategy:
+          type: string
+          enum: [auto-fix, manual-review, suppress, upgrade-dependency]
+
+    ResolutionTask:
+      type: object
+      required: [taskId, findingId, strategy, status, progress, createdAt]
+      properties:
+        taskId:
+          type: string
+        findingId:
+          type: string
+        strategy:
+          type: string
+        status:
+          type: string
+          enum: [queued, running, completed, failed, suppressed]
+        progress:
+          type: integer
+        message:
+          type: ["string", "null"]
+        steps:
+          type: array
+          items:
+            type: object
+            required: [label, done]
+            properties:
+              label:
+                type: string
+              done:
+                type: boolean
+        createdAt:
+          type: string
+        completedAt:
+          type: ["string", "null"]

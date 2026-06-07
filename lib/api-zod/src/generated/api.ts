@@ -419,6 +419,131 @@ export const GetRecentActivityResponse = zod.array(GetRecentActivityResponseItem
 
 
 /**
+ * @summary Get the full security scan report with all findings
+ */
+export const GetSecurityScanReportResponse = zod.object({
+  "scannedAt": zod.string(),
+  "totalFindings": zod.number(),
+  "bySeverity": zod.object({
+  "critical": zod.number().optional(),
+  "high": zod.number().optional(),
+  "medium": zod.number().optional(),
+  "low": zod.number().optional(),
+  "info": zod.number().optional()
+}),
+  "findings": zod.array(zod.object({
+  "id": zod.string(),
+  "source": zod.enum(['sast', 'dependency', 'hounddog']),
+  "severity": zod.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO', 'moderate']),
+  "title": zod.string(),
+  "file": zod.string(),
+  "line": zod.number(),
+  "message": zod.string(),
+  "category": zod.string(),
+  "cveId": zod.string().nullish(),
+  "packageName": zod.string().nullish(),
+  "fixVersion": zod.string().nullish(),
+  "codeSnippet": zod.string().nullish()
+})),
+  "depSummary": zod.object({
+  "critical": zod.number().optional(),
+  "high": zod.number().optional(),
+  "moderate": zod.number().optional(),
+  "low": zod.number().optional(),
+  "info": zod.number().optional()
+})
+})
+
+
+/**
+ * @summary Get the parsed threat model document
+ */
+export const GetSecurityThreatModelResponse = zod.object({
+  "content": zod.string(),
+  "sections": zod.array(zod.object({
+  "title": zod.string(),
+  "content": zod.string()
+}))
+})
+
+
+/**
+ * @summary Run LLM analysis on a specific security finding
+ */
+export const AnalyzeFindingBody = zod.object({
+  "findingId": zod.string(),
+  "finding": zod.object({
+  "id": zod.string(),
+  "source": zod.enum(['sast', 'dependency', 'hounddog']),
+  "severity": zod.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO', 'moderate']),
+  "title": zod.string(),
+  "file": zod.string(),
+  "line": zod.number(),
+  "message": zod.string(),
+  "category": zod.string(),
+  "cveId": zod.string().nullish(),
+  "packageName": zod.string().nullish(),
+  "fixVersion": zod.string().nullish(),
+  "codeSnippet": zod.string().nullish()
+})
+})
+
+export const AnalyzeFindingResponse = zod.object({
+  "findingId": zod.string(),
+  "riskLevel": zod.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']),
+  "summary": zod.string(),
+  "impact": zod.string(),
+  "rootCause": zod.string(),
+  "fix": zod.string(),
+  "codeExample": zod.string().nullish(),
+  "effort": zod.enum(['low', 'medium', 'high']),
+  "strideCategory": zod.string()
+})
+
+
+/**
+ * @summary Start a background resolution task for a vulnerability
+ */
+export const StartResolutionTaskBody = zod.object({
+  "findingId": zod.string(),
+  "strategy": zod.enum(['auto-fix', 'manual-review', 'suppress', 'upgrade-dependency'])
+})
+
+
+/**
+ * @summary Get all resolution tasks with progress
+ */
+export const GetResolutionTasksResponseItem = zod.object({
+  "taskId": zod.string(),
+  "findingId": zod.string(),
+  "strategy": zod.string(),
+  "status": zod.enum(['queued', 'running', 'completed', 'failed', 'suppressed']),
+  "progress": zod.number(),
+  "message": zod.string().nullish(),
+  "steps": zod.array(zod.object({
+  "label": zod.string(),
+  "done": zod.boolean()
+})).optional(),
+  "createdAt": zod.string(),
+  "completedAt": zod.string().nullish()
+})
+export const GetResolutionTasksResponse = zod.array(GetResolutionTasksResponseItem)
+
+
+/**
+ * @summary Dismiss a completed resolution task
+ */
+export const DismissResolutionTaskParams = zod.object({
+  "taskId": zod.coerce.string()
+})
+
+export const DismissResolutionTaskResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string().optional()
+})
+
+
+/**
  * @summary Get case counts by status
  */
 export const GetCaseStatusBreakdownResponseItem = zod.object({

@@ -13,6 +13,7 @@ import photosRouter from "./photos";
 import caseNotesRouter from "./case-notes";
 import labsRouter from "./labs";
 import scanLibraryRouter from "./scan-library";
+import securityRouter from "./security";
 import { auditMiddleware } from "../middleware/audit";
 
 const router: IRouter = Router();
@@ -21,6 +22,7 @@ router.use(auditMiddleware);
 
 router.use(healthRouter);
 router.use("/auth", authRouter);
+router.use("/", securityRouter);
 router.use("/patients", patientsRouter);
 router.use("/cases", casesRouter);
 router.use("/dashboard", dashboardRouter);

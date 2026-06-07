@@ -284,6 +284,162 @@ export interface SaveAnalysisInput {
   measurementsData?: SaveAnalysisInputMeasurementsData;
 }
 
+export type SecurityFindingSource = typeof SecurityFindingSource[keyof typeof SecurityFindingSource];
+
+
+export const SecurityFindingSource = {
+  sast: 'sast',
+  dependency: 'dependency',
+  hounddog: 'hounddog',
+} as const;
+
+export type SecurityFindingSeverity = typeof SecurityFindingSeverity[keyof typeof SecurityFindingSeverity];
+
+
+export const SecurityFindingSeverity = {
+  CRITICAL: 'CRITICAL',
+  HIGH: 'HIGH',
+  MEDIUM: 'MEDIUM',
+  LOW: 'LOW',
+  INFO: 'INFO',
+  moderate: 'moderate',
+} as const;
+
+export interface SecurityFinding {
+  id: string;
+  source: SecurityFindingSource;
+  severity: SecurityFindingSeverity;
+  title: string;
+  file: string;
+  line: number;
+  message: string;
+  category: string;
+  /** @nullable */
+  cveId?: string | null;
+  /** @nullable */
+  packageName?: string | null;
+  /** @nullable */
+  fixVersion?: string | null;
+  /** @nullable */
+  codeSnippet?: string | null;
+}
+
+export type SecurityScanReportBySeverity = {
+  critical?: number;
+  high?: number;
+  medium?: number;
+  low?: number;
+  info?: number;
+};
+
+export type SecurityScanReportDepSummary = {
+  critical?: number;
+  high?: number;
+  moderate?: number;
+  low?: number;
+  info?: number;
+};
+
+export interface SecurityScanReport {
+  scannedAt: string;
+  totalFindings: number;
+  bySeverity: SecurityScanReportBySeverity;
+  findings: SecurityFinding[];
+  depSummary: SecurityScanReportDepSummary;
+}
+
+export type ThreatModelResponseSectionsItem = {
+  title: string;
+  content: string;
+};
+
+export interface ThreatModelResponse {
+  content: string;
+  sections: ThreatModelResponseSectionsItem[];
+}
+
+export interface AnalyzeFindingInput {
+  findingId: string;
+  finding: SecurityFinding;
+}
+
+export type FindingAnalysisRiskLevel = typeof FindingAnalysisRiskLevel[keyof typeof FindingAnalysisRiskLevel];
+
+
+export const FindingAnalysisRiskLevel = {
+  CRITICAL: 'CRITICAL',
+  HIGH: 'HIGH',
+  MEDIUM: 'MEDIUM',
+  LOW: 'LOW',
+} as const;
+
+export type FindingAnalysisEffort = typeof FindingAnalysisEffort[keyof typeof FindingAnalysisEffort];
+
+
+export const FindingAnalysisEffort = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export interface FindingAnalysis {
+  findingId: string;
+  riskLevel: FindingAnalysisRiskLevel;
+  summary: string;
+  impact: string;
+  rootCause: string;
+  fix: string;
+  /** @nullable */
+  codeExample?: string | null;
+  effort: FindingAnalysisEffort;
+  strideCategory: string;
+}
+
+export type ResolutionTaskInputStrategy = typeof ResolutionTaskInputStrategy[keyof typeof ResolutionTaskInputStrategy];
+
+
+export const ResolutionTaskInputStrategy = {
+  'auto-fix': 'auto-fix',
+  'manual-review': 'manual-review',
+  suppress: 'suppress',
+  'upgrade-dependency': 'upgrade-dependency',
+} as const;
+
+export interface ResolutionTaskInput {
+  findingId: string;
+  strategy: ResolutionTaskInputStrategy;
+}
+
+export type ResolutionTaskStatus = typeof ResolutionTaskStatus[keyof typeof ResolutionTaskStatus];
+
+
+export const ResolutionTaskStatus = {
+  queued: 'queued',
+  running: 'running',
+  completed: 'completed',
+  failed: 'failed',
+  suppressed: 'suppressed',
+} as const;
+
+export type ResolutionTaskStepsItem = {
+  label: string;
+  done: boolean;
+};
+
+export interface ResolutionTask {
+  taskId: string;
+  findingId: string;
+  strategy: string;
+  status: ResolutionTaskStatus;
+  progress: number;
+  /** @nullable */
+  message?: string | null;
+  steps?: ResolutionTaskStepsItem[];
+  createdAt: string;
+  /** @nullable */
+  completedAt?: string | null;
+}
+
 export type ListPatientsParams = {
 search?: string;
 page?: number;

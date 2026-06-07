@@ -21,6 +21,7 @@ import type {
 
 import type {
   ActivityItem,
+  AnalyzeFindingInput,
   AuthResponse,
   CaseInput,
   CaseListResponse,
@@ -28,6 +29,7 @@ import type {
   DashboardStats,
   Doctor,
   ErrorResponse,
+  FindingAnalysis,
   GetRecentActivityParams,
   HealthStatus,
   ListCasesParams,
@@ -38,11 +40,15 @@ import type {
   PatientInput,
   PatientListResponse,
   PatientUpdate,
+  ResolutionTask,
+  ResolutionTaskInput,
   SaveAnalysisInput,
   Scan,
   ScanAnalysis,
+  SecurityScanReport,
   StatusCount,
-  SuccessResponse
+  SuccessResponse,
+  ThreatModelResponse
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -1633,6 +1639,449 @@ export function useGetRecentActivity<TData = Awaited<ReturnType<typeof getRecent
 
 
 
+
+export const getGetSecurityScanReportUrl = () => {
+
+
+
+
+  return `/api/security/scan-report`
+}
+
+/**
+ * @summary Get the full security scan report with all findings
+ */
+export const getSecurityScanReport = async ( options?: RequestInit): Promise<SecurityScanReport> => {
+
+  return customFetch<SecurityScanReport>(getGetSecurityScanReportUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSecurityScanReportQueryKey = () => {
+    return [
+    `/api/security/scan-report`
+    ] as const;
+    }
+
+
+export const getGetSecurityScanReportQueryOptions = <TData = Awaited<ReturnType<typeof getSecurityScanReport>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSecurityScanReport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSecurityScanReportQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSecurityScanReport>>> = ({ signal }) => getSecurityScanReport({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSecurityScanReport>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSecurityScanReportQueryResult = NonNullable<Awaited<ReturnType<typeof getSecurityScanReport>>>
+export type GetSecurityScanReportQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the full security scan report with all findings
+ */
+
+export function useGetSecurityScanReport<TData = Awaited<ReturnType<typeof getSecurityScanReport>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSecurityScanReport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSecurityScanReportQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSecurityThreatModelUrl = () => {
+
+
+
+
+  return `/api/security/threat-model`
+}
+
+/**
+ * @summary Get the parsed threat model document
+ */
+export const getSecurityThreatModel = async ( options?: RequestInit): Promise<ThreatModelResponse> => {
+
+  return customFetch<ThreatModelResponse>(getGetSecurityThreatModelUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSecurityThreatModelQueryKey = () => {
+    return [
+    `/api/security/threat-model`
+    ] as const;
+    }
+
+
+export const getGetSecurityThreatModelQueryOptions = <TData = Awaited<ReturnType<typeof getSecurityThreatModel>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSecurityThreatModel>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSecurityThreatModelQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSecurityThreatModel>>> = ({ signal }) => getSecurityThreatModel({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSecurityThreatModel>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSecurityThreatModelQueryResult = NonNullable<Awaited<ReturnType<typeof getSecurityThreatModel>>>
+export type GetSecurityThreatModelQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the parsed threat model document
+ */
+
+export function useGetSecurityThreatModel<TData = Awaited<ReturnType<typeof getSecurityThreatModel>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSecurityThreatModel>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSecurityThreatModelQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAnalyzeFindingUrl = () => {
+
+
+
+
+  return `/api/security/analyze`
+}
+
+/**
+ * @summary Run LLM analysis on a specific security finding
+ */
+export const analyzeFinding = async (analyzeFindingInput: AnalyzeFindingInput, options?: RequestInit): Promise<FindingAnalysis> => {
+
+  return customFetch<FindingAnalysis>(getAnalyzeFindingUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      analyzeFindingInput,)
+  }
+);}
+
+
+
+
+export const getAnalyzeFindingMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof analyzeFinding>>, TError,{data: BodyType<AnalyzeFindingInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof analyzeFinding>>, TError,{data: BodyType<AnalyzeFindingInput>}, TContext> => {
+
+const mutationKey = ['analyzeFinding'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof analyzeFinding>>, {data: BodyType<AnalyzeFindingInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  analyzeFinding(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AnalyzeFindingMutationResult = NonNullable<Awaited<ReturnType<typeof analyzeFinding>>>
+    export type AnalyzeFindingMutationBody = BodyType<AnalyzeFindingInput>
+    export type AnalyzeFindingMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Run LLM analysis on a specific security finding
+ */
+export const useAnalyzeFinding = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof analyzeFinding>>, TError,{data: BodyType<AnalyzeFindingInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof analyzeFinding>>,
+        TError,
+        {data: BodyType<AnalyzeFindingInput>},
+        TContext
+      > => {
+      return useMutation(getAnalyzeFindingMutationOptions(options));
+    }
+
+export const getStartResolutionTaskUrl = () => {
+
+
+
+
+  return `/api/security/resolve`
+}
+
+/**
+ * @summary Start a background resolution task for a vulnerability
+ */
+export const startResolutionTask = async (resolutionTaskInput: ResolutionTaskInput, options?: RequestInit): Promise<ResolutionTask> => {
+
+  return customFetch<ResolutionTask>(getStartResolutionTaskUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      resolutionTaskInput,)
+  }
+);}
+
+
+
+
+export const getStartResolutionTaskMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startResolutionTask>>, TError,{data: BodyType<ResolutionTaskInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startResolutionTask>>, TError,{data: BodyType<ResolutionTaskInput>}, TContext> => {
+
+const mutationKey = ['startResolutionTask'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startResolutionTask>>, {data: BodyType<ResolutionTaskInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  startResolutionTask(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartResolutionTaskMutationResult = NonNullable<Awaited<ReturnType<typeof startResolutionTask>>>
+    export type StartResolutionTaskMutationBody = BodyType<ResolutionTaskInput>
+    export type StartResolutionTaskMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Start a background resolution task for a vulnerability
+ */
+export const useStartResolutionTask = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startResolutionTask>>, TError,{data: BodyType<ResolutionTaskInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startResolutionTask>>,
+        TError,
+        {data: BodyType<ResolutionTaskInput>},
+        TContext
+      > => {
+      return useMutation(getStartResolutionTaskMutationOptions(options));
+    }
+
+export const getGetResolutionTasksUrl = () => {
+
+
+
+
+  return `/api/security/tasks`
+}
+
+/**
+ * @summary Get all resolution tasks with progress
+ */
+export const getResolutionTasks = async ( options?: RequestInit): Promise<ResolutionTask[]> => {
+
+  return customFetch<ResolutionTask[]>(getGetResolutionTasksUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetResolutionTasksQueryKey = () => {
+    return [
+    `/api/security/tasks`
+    ] as const;
+    }
+
+
+export const getGetResolutionTasksQueryOptions = <TData = Awaited<ReturnType<typeof getResolutionTasks>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getResolutionTasks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetResolutionTasksQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getResolutionTasks>>> = ({ signal }) => getResolutionTasks({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getResolutionTasks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetResolutionTasksQueryResult = NonNullable<Awaited<ReturnType<typeof getResolutionTasks>>>
+export type GetResolutionTasksQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get all resolution tasks with progress
+ */
+
+export function useGetResolutionTasks<TData = Awaited<ReturnType<typeof getResolutionTasks>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getResolutionTasks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetResolutionTasksQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getDismissResolutionTaskUrl = (taskId: string,) => {
+
+
+
+
+  return `/api/security/tasks/${taskId}`
+}
+
+/**
+ * @summary Dismiss a completed resolution task
+ */
+export const dismissResolutionTask = async (taskId: string, options?: RequestInit): Promise<SuccessResponse> => {
+
+  return customFetch<SuccessResponse>(getDismissResolutionTaskUrl(taskId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDismissResolutionTaskMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dismissResolutionTask>>, TError,{taskId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof dismissResolutionTask>>, TError,{taskId: string}, TContext> => {
+
+const mutationKey = ['dismissResolutionTask'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof dismissResolutionTask>>, {taskId: string}> = (props) => {
+          const {taskId} = props ?? {};
+
+          return  dismissResolutionTask(taskId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DismissResolutionTaskMutationResult = NonNullable<Awaited<ReturnType<typeof dismissResolutionTask>>>
+
+    export type DismissResolutionTaskMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Dismiss a completed resolution task
+ */
+export const useDismissResolutionTask = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dismissResolutionTask>>, TError,{taskId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof dismissResolutionTask>>,
+        TError,
+        {taskId: string},
+        TContext
+      > => {
+      return useMutation(getDismissResolutionTaskMutationOptions(options));
+    }
 
 export const getGetCaseStatusBreakdownUrl = () => {
 
