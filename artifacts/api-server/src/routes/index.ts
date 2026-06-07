@@ -11,11 +11,12 @@ import analyticsRouter from "./analytics";
 import searchRouter from "./search";
 import photosRouter from "./photos";
 import caseNotesRouter from "./case-notes";
+import labsRouter from "./labs";
+import scanLibraryRouter from "./scan-library";
 import { auditMiddleware } from "../middleware/audit";
 
 const router: IRouter = Router();
 
-// Audit logging middleware — logs all mutating requests
 router.use(auditMiddleware);
 
 router.use(healthRouter);
@@ -30,5 +31,7 @@ router.use("/", aiCopilotRouter);
 router.use("/", searchRouter);
 router.use("/", photosRouter);
 router.use("/", caseNotesRouter);
+router.use("/", labsRouter);
+router.use("/", scanLibraryRouter);
 
 export default router;

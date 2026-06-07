@@ -27,6 +27,9 @@ import ProgressTracker from "@/pages/progress-tracker";
 import PlanComparison from "@/pages/plan-comparison";
 import AttachmentAdvisor from "@/pages/attachment-advisor";
 import PracticeAnalytics from "@/pages/practice-analytics";
+import LabPortal from "@/pages/lab-portal/index";
+import OrderDetail from "@/pages/lab-portal/order-detail";
+import ScanLibrary from "@/pages/scan-library/index";
 
 const queryClient = new QueryClient();
 
@@ -89,6 +92,13 @@ function Router() {
       <Route path="/plan-comparison/:caseId"><ProtectedRoute component={PlanComparison} /></Route>
       <Route path="/attachment-advisor"><ProtectedRoute component={AttachmentAdvisor} /></Route>
       <Route path="/practice-analytics"><ProtectedRoute component={PracticeAnalytics} /></Route>
+
+      {/* Lab Portal */}
+      <Route path="/lab-portal"><ProtectedRoute component={LabPortal} /></Route>
+      <Route path="/lab-portal/:orderId"><ProtectedRoute component={OrderDetail} /></Route>
+
+      {/* Scan Library */}
+      <Route path="/scan-library"><ProtectedRoute component={ScanLibrary} /></Route>
 
       <Route component={NotFound} />
     </Switch>

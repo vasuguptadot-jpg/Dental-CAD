@@ -6,7 +6,7 @@ import {
   Activity, LayoutDashboard, Users, UserSquare2, LogOut, Loader2,
   Moon, Sun, Brain, Bot, Layers, Cpu, Printer, BarChart3,
   Scale, Scissors, TrendingUp, GitCompare, Camera, Keyboard, HelpCircle,
-  Paperclip, LineChart
+  Paperclip, LineChart, FlaskConical, ScanLine
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme-provider";
@@ -63,6 +63,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { label: "Plan Comparison", href: "/plan-comparison", icon: GitCompare },
     { label: "Attachment Advisor", href: "/attachment-advisor", icon: Paperclip },
     { label: "Practice Analytics", href: "/practice-analytics", icon: LineChart },
+  ];
+
+  const workflowTools = [
+    { label: "Lab Portal", href: "/lab-portal", icon: FlaskConical },
+    { label: "Scan Library", href: "/scan-library", icon: ScanLine },
   ];
 
   const isActive = (href: string) => location.startsWith(href);
@@ -135,6 +140,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 className={`w-full justify-start gap-2 ${isActive(item.href) ? "" : "text-muted-foreground hover:text-foreground"}`}
               >
                 <item.icon className="h-4 w-4 text-cyan-400" />
+                {item.label}
+              </Button>
+            </Link>
+          ))}
+
+          <div className="px-2 py-1.5 mt-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+            <FlaskConical className="h-3 w-3 text-emerald-400" /> Lab & Scans
+          </div>
+          {workflowTools.map((item) => (
+            <Link key={item.href} href={item.href}>
+              <Button
+                variant={isActive(item.href) ? "secondary" : "ghost"}
+                className={`w-full justify-start gap-2 ${isActive(item.href) ? "" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <item.icon className="h-4 w-4 text-emerald-400" />
                 {item.label}
               </Button>
             </Link>

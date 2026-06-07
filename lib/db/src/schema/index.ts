@@ -6,3 +6,5 @@ export * from "./activity";
 export * from "./scan-analysis";
 export * from "./photos";
 export * from "./case-notes";
+export * from "./labs";
+export * from "./scan-metadata";
