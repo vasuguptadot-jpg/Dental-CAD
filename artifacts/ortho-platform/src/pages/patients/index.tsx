@@ -144,7 +144,7 @@ function AddPatientDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
         onOpenChange(false);
       },
       onError: (err) => {
-        toast({ variant: "destructive", title: "Failed to create patient", description: err.error?.error || "An error occurred" });
+        toast({ variant: "destructive", title: "Failed to create patient", description: (err as any)?.error || "An error occurred" });
       }
     });
   };

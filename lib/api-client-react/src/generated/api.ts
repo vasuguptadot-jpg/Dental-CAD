@@ -38,7 +38,9 @@ import type {
   PatientInput,
   PatientListResponse,
   PatientUpdate,
+  SaveAnalysisInput,
   Scan,
+  ScanAnalysis,
   StatusCount,
   SuccessResponse
 } from './api.schemas';
@@ -1320,6 +1322,155 @@ export const useDeleteScan = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteScanMutationOptions(options));
+    }
+
+export const getGetScanAnalysisUrl = (scanId: number,) => {
+
+
+
+
+  return `/api/scans/${scanId}/analysis`
+}
+
+/**
+ * @summary Get AI analysis for a scan
+ */
+export const getScanAnalysis = async (scanId: number, options?: RequestInit): Promise<ScanAnalysis> => {
+
+  return customFetch<ScanAnalysis>(getGetScanAnalysisUrl(scanId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetScanAnalysisQueryKey = (scanId: number,) => {
+    return [
+    `/api/scans/${scanId}/analysis`
+    ] as const;
+    }
+
+
+export const getGetScanAnalysisQueryOptions = <TData = Awaited<ReturnType<typeof getScanAnalysis>>, TError = ErrorType<ErrorResponse>>(scanId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getScanAnalysis>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetScanAnalysisQueryKey(scanId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getScanAnalysis>>> = ({ signal }) => getScanAnalysis(scanId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(scanId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getScanAnalysis>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetScanAnalysisQueryResult = NonNullable<Awaited<ReturnType<typeof getScanAnalysis>>>
+export type GetScanAnalysisQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get AI analysis for a scan
+ */
+
+export function useGetScanAnalysis<TData = Awaited<ReturnType<typeof getScanAnalysis>>, TError = ErrorType<ErrorResponse>>(
+ scanId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getScanAnalysis>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetScanAnalysisQueryOptions(scanId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSaveScanAnalysisUrl = (scanId: number,) => {
+
+
+
+
+  return `/api/scans/${scanId}/analysis`
+}
+
+/**
+ * @summary Save (upsert) AI analysis for a scan
+ */
+export const saveScanAnalysis = async (scanId: number,
+    saveAnalysisInput: SaveAnalysisInput, options?: RequestInit): Promise<ScanAnalysis> => {
+
+  return customFetch<ScanAnalysis>(getSaveScanAnalysisUrl(scanId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      saveAnalysisInput,)
+  }
+);}
+
+
+
+
+export const getSaveScanAnalysisMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveScanAnalysis>>, TError,{scanId: number;data: BodyType<SaveAnalysisInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveScanAnalysis>>, TError,{scanId: number;data: BodyType<SaveAnalysisInput>}, TContext> => {
+
+const mutationKey = ['saveScanAnalysis'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveScanAnalysis>>, {scanId: number;data: BodyType<SaveAnalysisInput>}> = (props) => {
+          const {scanId,data} = props ?? {};
+
+          return  saveScanAnalysis(scanId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveScanAnalysisMutationResult = NonNullable<Awaited<ReturnType<typeof saveScanAnalysis>>>
+    export type SaveScanAnalysisMutationBody = BodyType<SaveAnalysisInput>
+    export type SaveScanAnalysisMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Save (upsert) AI analysis for a scan
+ */
+export const useSaveScanAnalysis = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveScanAnalysis>>, TError,{scanId: number;data: BodyType<SaveAnalysisInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveScanAnalysis>>,
+        TError,
+        {scanId: number;data: BodyType<SaveAnalysisInput>},
+        TContext
+      > => {
+      return useMutation(getSaveScanAnalysisMutationOptions(options));
     }
 
 export const getGetDashboardStatsUrl = () => {

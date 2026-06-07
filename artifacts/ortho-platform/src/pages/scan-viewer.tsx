@@ -3,7 +3,7 @@ import { useRoute, Link } from "wouter";
 import * as THREE from "three";
 import { OrbitControls } from "three-stdlib";
 import { STLLoader, OBJLoader, PLYLoader } from "three-stdlib";
-import { useGetScan } from "@workspace/api-client-react";
+import { useGetScan, getGetScanQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Loader2, Maximize, Ruler, RotateCcw, Box } from "lucide-react";
@@ -27,7 +27,7 @@ export default function ScanViewer() {
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   
   const { data: scanData } = useGetScan(scanId, {
-    query: { enabled: !!scanId }
+    query: { enabled: !!scanId, queryKey: getGetScanQueryKey(scanId) }
   });
 
   useEffect(() => {
@@ -173,7 +173,7 @@ export default function ScanViewer() {
         mountRef.current.innerHTML = "";
       }
       renderer.dispose();
-      if (geometry) geometry.dispose();
+      if (meshRef.current) meshRef.current.geometry.dispose();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scanData, scanId]);

@@ -46,7 +46,7 @@ export default function Login() {
           toast({
             variant: "destructive",
             title: "Login failed",
-            description: err.error?.error || "Invalid credentials. Please try again.",
+            description: (err as any)?.error || "Invalid credentials. Please try again.",
           });
         },
       }

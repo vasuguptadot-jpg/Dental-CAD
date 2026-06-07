@@ -189,6 +189,101 @@ export interface StatusCount {
   count: number;
 }
 
+export interface ToothSegment {
+  fdiNumber: number;
+  label?: string;
+  color: string;
+  centroidX: number;
+  centroidY: number;
+  centroidZ: number;
+  vertexCount: number;
+  isVisible: boolean;
+  quadrant?: number;
+  toothIndex?: number;
+}
+
+export type LandmarkType = typeof LandmarkType[keyof typeof LandmarkType];
+
+
+export const LandmarkType = {
+  incisal_edge: 'incisal_edge',
+  cusp: 'cusp',
+  contact_point: 'contact_point',
+  gingival_margin: 'gingival_margin',
+  center: 'center',
+} as const;
+
+export interface Landmark {
+  id: string;
+  fdiNumber: number;
+  type: LandmarkType;
+  x: number;
+  y: number;
+  z: number;
+  isManual?: boolean;
+}
+
+export interface Measurement {
+  type: string;
+  label: string;
+  value: number;
+  unit: string;
+  /** @nullable */
+  toothFdi?: number | null;
+}
+
+export type ScanAnalysisStatus = typeof ScanAnalysisStatus[keyof typeof ScanAnalysisStatus];
+
+
+export const ScanAnalysisStatus = {
+  pending: 'pending',
+  running: 'running',
+  completed: 'completed',
+  failed: 'failed',
+} as const;
+
+/**
+ * @nullable
+ */
+export type ScanAnalysisSegmentationData = { [key: string]: unknown } | null;
+
+/**
+ * @nullable
+ */
+export type ScanAnalysisLandmarksData = { [key: string]: unknown } | null;
+
+/**
+ * @nullable
+ */
+export type ScanAnalysisMeasurementsData = { [key: string]: unknown } | null;
+
+export interface ScanAnalysis {
+  id?: number;
+  scanId: number;
+  status: ScanAnalysisStatus;
+  /** @nullable */
+  segmentationData?: ScanAnalysisSegmentationData;
+  /** @nullable */
+  landmarksData?: ScanAnalysisLandmarksData;
+  /** @nullable */
+  measurementsData?: ScanAnalysisMeasurementsData;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export type SaveAnalysisInputSegmentationData = { [key: string]: unknown };
+
+export type SaveAnalysisInputLandmarksData = { [key: string]: unknown };
+
+export type SaveAnalysisInputMeasurementsData = { [key: string]: unknown };
+
+export interface SaveAnalysisInput {
+  status?: string;
+  segmentationData?: SaveAnalysisInputSegmentationData;
+  landmarksData?: SaveAnalysisInputLandmarksData;
+  measurementsData?: SaveAnalysisInputMeasurementsData;
+}
+
 export type ListPatientsParams = {
 search?: string;
 page?: number;

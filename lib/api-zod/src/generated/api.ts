@@ -324,6 +324,69 @@ export const DeleteScanResponse = zod.object({
 
 
 /**
+ * @summary Get AI analysis for a scan
+ */
+export const GetScanAnalysisParams = zod.object({
+  "scanId": zod.coerce.number()
+})
+
+export const GetScanAnalysisResponse = zod.object({
+  "id": zod.number().optional(),
+  "scanId": zod.number(),
+  "status": zod.enum(['pending', 'running', 'completed', 'failed']),
+  "segmentationData": zod.object({
+
+}).passthrough().nullish(),
+  "landmarksData": zod.object({
+
+}).passthrough().nullish(),
+  "measurementsData": zod.object({
+
+}).passthrough().nullish(),
+  "createdAt": zod.string().optional(),
+  "updatedAt": zod.string().optional()
+})
+
+
+/**
+ * @summary Save (upsert) AI analysis for a scan
+ */
+export const SaveScanAnalysisParams = zod.object({
+  "scanId": zod.coerce.number()
+})
+
+export const SaveScanAnalysisBody = zod.object({
+  "status": zod.string().optional(),
+  "segmentationData": zod.object({
+
+}).passthrough().optional(),
+  "landmarksData": zod.object({
+
+}).passthrough().optional(),
+  "measurementsData": zod.object({
+
+}).passthrough().optional()
+})
+
+export const SaveScanAnalysisResponse = zod.object({
+  "id": zod.number().optional(),
+  "scanId": zod.number(),
+  "status": zod.enum(['pending', 'running', 'completed', 'failed']),
+  "segmentationData": zod.object({
+
+}).passthrough().nullish(),
+  "landmarksData": zod.object({
+
+}).passthrough().nullish(),
+  "measurementsData": zod.object({
+
+}).passthrough().nullish(),
+  "createdAt": zod.string().optional(),
+  "updatedAt": zod.string().optional()
+})
+
+
+/**
  * @summary Get dashboard statistics
  */
 export const GetDashboardStatsResponse = zod.object({

@@ -58,11 +58,11 @@ export default function PatientDetail() {
   const patientId = params?.patientId ? parseInt(params.patientId, 10) : 0;
   
   const { data: patient, isLoading: patientLoading } = useGetPatient(patientId, {
-    query: { enabled: !!patientId }
+    query: { enabled: !!patientId, queryKey: getGetPatientQueryKey(patientId) }
   });
   
   const { data: casesData, isLoading: casesLoading } = useListCases({ patientId }, {
-    query: { enabled: !!patientId }
+    query: { enabled: !!patientId, queryKey: getListCasesQueryKey({ patientId }) }
   });
 
   if (patientLoading) {
@@ -238,7 +238,7 @@ function EditPatientDialog({ patient }: { patient: any }) {
         setOpen(false);
       },
       onError: (err) => {
-        toast({ variant: "destructive", title: "Failed to update", description: err.error?.error || "An error occurred" });
+        toast({ variant: "destructive", title: "Failed to update", description: (err as any)?.error || "An error occurred" });
       }
     });
   };
@@ -319,7 +319,7 @@ function AddCaseDialog({ patientId }: { patientId: number }) {
         setOpen(false);
       },
       onError: (err) => {
-        toast({ variant: "destructive", title: "Failed to create", description: err.error?.error });
+        toast({ variant: "destructive", title: "Failed to create", description: (err as any)?.error });
       }
     });
   };

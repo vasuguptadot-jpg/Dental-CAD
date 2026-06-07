@@ -19,6 +19,8 @@ tags:
     description: 3D scan management
   - name: dashboard
     description: Dashboard analytics
+  - name: analysis
+    description: AI tooth segmentation and landmark analysis
 
 paths:
   /healthz:
@@ -378,6 +380,54 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
 
+  /scans/{scanId}/analysis:
+    get:
+      operationId: getScanAnalysis
+      tags: [analysis]
+      summary: Get AI analysis for a scan
+      parameters:
+        - name: scanId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Analysis found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanAnalysis"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: saveScanAnalysis
+      tags: [analysis]
+      summary: Save (upsert) AI analysis for a scan
+      parameters:
+        - name: scanId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveAnalysisInput"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanAnalysis"
+
   /dashboard/stats:
     get:
       operationId: getDashboardStats
@@ -688,3 +738,97 @@ components:
           type: string
         count:
           type: integer
+
+    ToothSegment:
+      type: object
+      required: [fdiNumber, color, centroidX, centroidY, centroidZ, vertexCount, isVisible]
+      properties:
+        fdiNumber:
+          type: integer
+        label:
+          type: string
+        color:
+          type: string
+        centroidX:
+          type: number
+        centroidY:
+          type: number
+        centroidZ:
+          type: number
+        vertexCount:
+          type: integer
+        isVisible:
+          type: boolean
+        quadrant:
+          type: integer
+        toothIndex:
+          type: integer
+
+    Landmark:
+      type: object
+      required: [id, fdiNumber, type, x, y, z]
+      properties:
+        id:
+          type: string
+        fdiNumber:
+          type: integer
+        type:
+          type: string
+          enum: [incisal_edge, cusp, contact_point, gingival_margin, center]
+        x:
+          type: number
+        y:
+          type: number
+        z:
+          type: number
+        isManual:
+          type: boolean
+
+    Measurement:
+      type: object
+      required: [type, value, unit, label]
+      properties:
+        type:
+          type: string
+        label:
+          type: string
+        value:
+          type: number
+        unit:
+          type: string
+        toothFdi:
+          type: ["integer", "null"]
+
+    ScanAnalysis:
+      type: object
+      required: [scanId, status]
+      properties:
+        id:
+          type: integer
+        scanId:
+          type: integer
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        segmentationData:
+          type: ["object", "null"]
+        landmarksData:
+          type: ["object", "null"]
+        measurementsData:
+          type: ["object", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    SaveAnalysisInput:
+      type: object
+      properties:
+        status:
+          type: string
+        segmentationData:
+          type: object
+        landmarksData:
+          type: object
+        measurementsData:
+          type: object

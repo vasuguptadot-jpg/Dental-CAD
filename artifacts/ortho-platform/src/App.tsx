@@ -13,6 +13,7 @@ import PatientDetail from "@/pages/patients/detail";
 import CasesList from "@/pages/cases/index";
 import CaseDetail from "@/pages/cases/detail";
 import ScanViewer from "@/pages/scan-viewer";
+import SegmentationViewer from "@/pages/segmentation";
 
 const queryClient = new QueryClient();
 
@@ -61,6 +62,7 @@ function Router() {
       <Route path="/cases"><ProtectedRoute component={CasesList} /></Route>
       <Route path="/cases/:caseId"><ProtectedRoute component={CaseDetail} /></Route>
       <Route path="/scan-viewer/:scanId"><ProtectedRoute component={ScanViewer} /></Route>
+      <Route path="/segmentation/:scanId"><ProtectedRoute component={SegmentationViewer} /></Route>
 
       <Route component={NotFound} />
     </Switch>

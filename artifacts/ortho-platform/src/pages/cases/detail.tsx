@@ -12,7 +12,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ArrowLeft, Upload, Box, Settings, CheckCircle2, ChevronRight, File } from "lucide-react";
+import { Loader2, ArrowLeft, Upload, Box, Settings, CheckCircle2, ChevronRight, File, Brain } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -36,11 +36,11 @@ export default function CaseDetail() {
   const caseId = params?.caseId ? parseInt(params.caseId, 10) : 0;
   
   const { data: caseData, isLoading: caseLoading } = useGetCase(caseId, {
-    query: { enabled: !!caseId }
+    query: { enabled: !!caseId, queryKey: getGetCaseQueryKey(caseId) }
   });
   
-  const { data: scans, isLoading: scansLoading } = useListScans({ caseId }, {
-    query: { enabled: !!caseId }
+  const { data: scans, isLoading: scansLoading } = useListScans(caseId, {
+    query: { enabled: !!caseId, queryKey: getListScansQueryKey(caseId) }
   });
 
   if (caseLoading) {
@@ -186,9 +186,14 @@ export default function CaseDetail() {
                           <span>{new Date(scan.createdAt).toLocaleDateString()}</span>
                         </div>
                       </div>
-                      <Link href={`/scan-viewer/${scan.id}`} className="bg-muted p-2 flex items-center justify-center text-sm font-medium text-primary hover:bg-primary hover:text-primary-foreground transition-colors group">
-                        Open in 3D Viewer <ChevronRight className="h-4 w-4 ml-1 opacity-50 group-hover:opacity-100 transition-opacity" />
-                      </Link>
+                      <div className="flex border-t divide-x border-border">
+                        <Link href={`/scan-viewer/${scan.id}`} className="flex-1 bg-muted p-2 flex items-center justify-center text-sm font-medium text-primary hover:bg-primary hover:text-primary-foreground transition-colors group">
+                          3D Viewer <ChevronRight className="h-4 w-4 ml-1 opacity-50 group-hover:opacity-100 transition-opacity" />
+                        </Link>
+                        <Link href={`/segmentation/${scan.id}`} className="flex-1 bg-muted p-2 flex items-center justify-center text-sm font-medium text-cyan-500 hover:bg-cyan-500 hover:text-primary-foreground transition-colors group">
+                          <Brain className="h-4 w-4 mr-1" /> AI Seg
+                        </Link>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -216,7 +221,7 @@ function UpdateStatusDialog({ caseData }: { caseData: any }) {
         setOpen(false);
       },
       onError: (err) => {
-        toast({ variant: "destructive", title: "Failed to update", description: err.error?.error });
+        toast({ variant: "destructive", title: "Failed to update", description: (err as any)?.error });
       }
     });
   };
@@ -296,7 +301,7 @@ function UploadScanDialog({ caseId }: { caseId: number }) {
       setUploading(false);
       if (xhr.status >= 200 && xhr.status < 300) {
         toast({ title: "Scan uploaded successfully" });
-        queryClient.invalidateQueries({ queryKey: getListScansQueryKey({ caseId }) });
+        queryClient.invalidateQueries({ queryKey: getListScansQueryKey(caseId) });
         setOpen(false);
       } else {
         try {
