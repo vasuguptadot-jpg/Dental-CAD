@@ -1,0 +1,1 @@
+- [Groq Integration](groq-integration.md) — Groq API via native fetch (OpenAI-compatible), GROQ_API_KEY secret, llama-3.3-70b-versatile, SSE streaming in ai-copilot route.

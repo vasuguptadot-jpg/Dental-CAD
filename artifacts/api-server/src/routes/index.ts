@@ -6,6 +6,7 @@ import casesRouter from "./cases";
 import scansRouter from "./scans";
 import dashboardRouter from "./dashboard";
 import analysisRouter from "./analysis";
+import aiCopilotRouter from "./ai-copilot";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use("/cases", casesRouter);
 router.use("/dashboard", dashboardRouter);
 router.use("/", scansRouter);
 router.use("/", analysisRouter);
+router.use("/", aiCopilotRouter);
 
 export default router;

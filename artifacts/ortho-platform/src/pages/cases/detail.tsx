@@ -186,12 +186,18 @@ export default function CaseDetail() {
                           <span>{new Date(scan.createdAt).toLocaleDateString()}</span>
                         </div>
                       </div>
-                      <div className="flex border-t divide-x border-border">
-                        <Link href={`/scan-viewer/${scan.id}`} className="flex-1 bg-muted p-2 flex items-center justify-center text-sm font-medium text-primary hover:bg-primary hover:text-primary-foreground transition-colors group">
-                          3D Viewer <ChevronRight className="h-4 w-4 ml-1 opacity-50 group-hover:opacity-100 transition-opacity" />
+                      <div className="flex border-t divide-x border-border flex-wrap">
+                        <Link href={`/scan-viewer/${scan.id}`} className="flex-1 bg-muted p-2 flex items-center justify-center text-xs font-medium text-primary hover:bg-primary hover:text-primary-foreground transition-colors group">
+                          3D View
                         </Link>
-                        <Link href={`/segmentation/${scan.id}`} className="flex-1 bg-muted p-2 flex items-center justify-center text-sm font-medium text-cyan-500 hover:bg-cyan-500 hover:text-primary-foreground transition-colors group">
-                          <Brain className="h-4 w-4 mr-1" /> AI Seg
+                        <Link href={`/segmentation/${scan.id}`} className="flex-1 bg-muted p-2 flex items-center justify-center text-xs font-medium text-cyan-500 hover:bg-cyan-500 hover:text-primary-foreground transition-colors">
+                          <Brain className="h-3 w-3 mr-1" /> Segment
+                        </Link>
+                        <Link href={`/ortho-analysis/${scan.id}`} className="flex-1 bg-muted p-2 flex items-center justify-center text-xs font-medium text-violet-400 hover:bg-violet-600 hover:text-white transition-colors">
+                          <Brain className="h-3 w-3 mr-1" /> Analysis
+                        </Link>
+                        <Link href={`/ai-copilot/${scan.id}`} className="flex-1 bg-muted p-2 flex items-center justify-center text-xs font-medium text-emerald-400 hover:bg-emerald-600 hover:text-white transition-colors">
+                          AI Copilot
                         </Link>
                       </div>
                     </div>

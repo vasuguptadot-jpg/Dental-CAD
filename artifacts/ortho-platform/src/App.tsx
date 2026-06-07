@@ -14,6 +14,8 @@ import CasesList from "@/pages/cases/index";
 import CaseDetail from "@/pages/cases/detail";
 import ScanViewer from "@/pages/scan-viewer";
 import SegmentationViewer from "@/pages/segmentation";
+import OrthoAnalysis from "@/pages/ortho-analysis";
+import AICopilot from "@/pages/ai-copilot";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +65,10 @@ function Router() {
       <Route path="/cases/:caseId"><ProtectedRoute component={CaseDetail} /></Route>
       <Route path="/scan-viewer/:scanId"><ProtectedRoute component={ScanViewer} /></Route>
       <Route path="/segmentation/:scanId"><ProtectedRoute component={SegmentationViewer} /></Route>
+      <Route path="/ortho-analysis/:scanId"><ProtectedRoute component={OrthoAnalysis} /></Route>
+      <Route path="/ortho-analysis"><ProtectedRoute component={OrthoAnalysis} /></Route>
+      <Route path="/ai-copilot/:scanId"><ProtectedRoute component={AICopilot} /></Route>
+      <Route path="/ai-copilot"><ProtectedRoute component={AICopilot} /></Route>
 
       <Route component={NotFound} />
     </Switch>
