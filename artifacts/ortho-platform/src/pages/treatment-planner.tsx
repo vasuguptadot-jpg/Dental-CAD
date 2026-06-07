@@ -17,6 +17,8 @@ import {
   Layers, History, Settings2, Eye, Cpu
 } from "lucide-react";
 
+import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
+import { ToothChart } from "@/components/tooth-chart";
 import { runSegmentation, type ToothSegment } from "@/lib/segmentation-engine";
 import { calculateMeasurements } from "@/lib/measurement-engine";
 import {
@@ -106,6 +108,7 @@ export default function TreatmentPlanner() {
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+  const [showToothChart, setShowToothChart] = useState(false);
 
   const { data: scanData } = useGetScan(scanId, { query: { enabled: !!scanId } });
   const { data: analysisData } = useGetScanAnalysis(scanId, { query: { enabled: !!scanId } });
@@ -462,6 +465,36 @@ export default function TreatmentPlanner() {
     setWarnings([]);
   };
 
+  const handleResetView = () => {
+    if (cameraRef.current && controlsRef.current) {
+      cameraRef.current.position.set(0, 20, 150);
+      controlsRef.current.reset();
+    }
+  };
+
+  const handleNextTooth = () => {
+    if (segments.length === 0) return;
+    const fdis = segments.map(s => s.fdiNumber);
+    const idx = selectedFdi ? fdis.indexOf(selectedFdi) : -1;
+    setSelectedFdi(fdis[(idx + 1) % fdis.length]);
+  };
+
+  const handlePrevTooth = () => {
+    if (segments.length === 0) return;
+    const fdis = segments.map(s => s.fdiNumber);
+    const idx = selectedFdi ? fdis.indexOf(selectedFdi) : 0;
+    setSelectedFdi(fdis[(idx - 1 + fdis.length) % fdis.length]);
+  };
+
+  useKeyboardShortcuts({
+    enabled: status === "ready",
+    onUndo: handleUndo,
+    onRedo: handleRedo,
+    onResetView: handleResetView,
+    onNextTooth: handleNextTooth,
+    onPrevTooth: handlePrevTooth,
+  });
+
   const handleSavePlan = () => {
     const plan = serializeTreatmentPlan(records);
     const blob = new Blob([JSON.stringify(plan, null, 2)], { type: "application/json" });
@@ -583,11 +616,31 @@ export default function TreatmentPlanner() {
         <div className="w-[210px] shrink-0 border-r border-zinc-800 bg-zinc-950/60 flex flex-col">
           <div className="px-3 py-2 border-b border-zinc-800 flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Teeth</span>
-            {collisionReport && (
-              <span className="text-xs text-red-400 font-bold">{collisionReport.collisionCount} coll.</span>
-            )}
+            <div className="flex items-center gap-1">
+              {collisionReport && (
+                <span className="text-xs text-red-400 font-bold">{collisionReport.collisionCount} coll.</span>
+              )}
+              <button
+                onClick={() => setShowToothChart(v => !v)}
+                className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${showToothChart ? "border-violet-500/50 text-violet-300 bg-violet-600/20" : "border-zinc-700 text-zinc-500 hover:text-zinc-300"}`}
+                title="Toggle tooth chart"
+              >
+                {showToothChart ? "List" : "Chart"}
+              </button>
+            </div>
           </div>
-          <ScrollArea className="flex-1">
+          {showToothChart ? (
+            <ScrollArea className="flex-1">
+              <div className="p-2">
+                <ToothChart
+                  selectedFdi={selectedFdi}
+                  activeFdis={segments.map(s => s.fdiNumber)}
+                  onSelect={setSelectedFdi}
+                />
+              </div>
+            </ScrollArea>
+          ) : null}
+          <ScrollArea className={showToothChart ? "hidden" : "flex-1"}>
             <div className="p-1.5 space-y-0.5">
               {segments.length === 0 && (
                 <div className="p-4 text-center text-xs text-zinc-500">Load a scan to begin</div>
@@ -615,6 +668,14 @@ export default function TreatmentPlanner() {
             </div>
           </ScrollArea>
 
+          {/* Keyboard shortcut hints */}
+          <div className="px-3 py-1.5 border-t border-zinc-800 flex flex-wrap gap-x-2 gap-y-0.5">
+            {[["Ctrl+Z", "Undo"], ["Ctrl+Y", "Redo"], ["R", "Reset view"], ["←/→", "Switch tooth"]].map(([k, label]) => (
+              <span key={k} className="text-[9px] text-zinc-600 flex items-center gap-0.5">
+                <kbd className="bg-zinc-800 border border-zinc-700 rounded px-0.5 text-zinc-400">{k}</kbd> {label}
+              </span>
+            ))}
+          </div>
           {/* Collision Summary */}
           {collisionReport && (
             <div className="border-t border-zinc-800 p-3 space-y-1.5">

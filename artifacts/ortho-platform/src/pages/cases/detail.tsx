@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRoute, Link } from "wouter";
 import { Layout } from "@/components/layout";
 import { 
@@ -12,23 +12,48 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ArrowLeft, Upload, Box, Settings, CheckCircle2, ChevronRight, File, Brain } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, ArrowLeft, Upload, Box, Settings, CheckCircle2, ChevronRight, File, Brain, Camera, ImageIcon, Trash2, TrendingUp, GitCompare, Scale, Scissors } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const STATUS_FLOW = [
+  "draft",
+  "in_planning",
+  "under_review",
+  "approved",
+  "active",
+  "completed",
+];
+
+const LEGACY_STATUS_FLOW = [
   "new",
   "scan_uploaded",
   "analysis_completed",
   "treatment_planning",
   "approved",
-  "manufacturing"
+  "manufacturing",
 ];
 
+const STATUS_LABELS: Record<string, string> = {
+  draft: "Draft",
+  in_planning: "In Planning",
+  under_review: "Under Review",
+  approved: "Approved",
+  active: "Active",
+  completed: "Completed",
+  new: "New",
+  scan_uploaded: "Scan Uploaded",
+  analysis_completed: "Analysis Completed",
+  treatment_planning: "Treatment Planning",
+  manufacturing: "Manufacturing",
+};
+
 const formatStatus = (status: string) => {
-  return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  return STATUS_LABELS[status] ?? status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };
 
 export default function CaseDetail() {
@@ -66,7 +91,8 @@ export default function CaseDetail() {
     );
   }
 
-  const currentStatusIndex = STATUS_FLOW.indexOf(caseData.status);
+  const activeFlow = STATUS_FLOW.includes(caseData.status) ? STATUS_FLOW : LEGACY_STATUS_FLOW;
+  const currentStatusIndex = activeFlow.indexOf(caseData.status);
 
   return (
     <Layout>
@@ -86,7 +112,15 @@ export default function CaseDetail() {
               <p className="text-muted-foreground">Patient: {caseData.patientName}</p>
             </div>
           </div>
-          <UpdateStatusDialog caseData={caseData} />
+          <div className="flex items-center gap-2">
+            <Link href={`/progress/${caseId}`}>
+              <Button variant="outline" size="sm" className="gap-2"><TrendingUp className="h-4 w-4" />Progress</Button>
+            </Link>
+            <Link href={`/plan-comparison/${caseId}`}>
+              <Button variant="outline" size="sm" className="gap-2"><GitCompare className="h-4 w-4" />Compare Plans</Button>
+            </Link>
+            <UpdateStatusDialog caseData={caseData} />
+          </div>
         </div>
 
         {/* Status Stepper */}
@@ -94,21 +128,20 @@ export default function CaseDetail() {
           <CardContent className="p-6">
             <div className="relative">
               <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-muted -translate-y-1/2 z-0" />
-              <div className="relative z-10 flex justify-between">
-                {STATUS_FLOW.map((status, index) => {
+              <div className="relative z-10 flex justify-between overflow-x-auto gap-1">
+                {activeFlow.map((status, index) => {
                   const isCompleted = index < currentStatusIndex;
                   const isCurrent = index === currentStatusIndex;
-                  
                   return (
-                    <div key={status} className="flex flex-col items-center gap-2 bg-card px-2">
-                      <div className={`h-8 w-8 rounded-full flex items-center justify-center border-2 transition-colors ${
+                    <div key={status} className="flex flex-col items-center gap-2 bg-card px-2 min-w-[70px]">
+                      <div className={`h-8 w-8 rounded-full flex items-center justify-center border-2 transition-colors shrink-0 ${
                         isCompleted ? "bg-primary border-primary text-primary-foreground" :
                         isCurrent ? "bg-background border-primary text-primary" :
                         "bg-background border-muted text-muted-foreground"
                       }`}>
                         {isCompleted ? <CheckCircle2 className="h-5 w-5" /> : <div className="h-2 w-2 rounded-full bg-current" />}
                       </div>
-                      <span className={`text-xs font-medium ${isCurrent ? "text-primary" : "text-muted-foreground"}`}>
+                      <span className={`text-xs font-medium text-center leading-tight ${isCurrent ? "text-primary" : "text-muted-foreground"}`}>
                         {formatStatus(status)}
                       </span>
                     </div>
@@ -139,9 +172,31 @@ export default function CaseDetail() {
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-1">{caseData.notes}</p>
                 </div>
               )}
+              <div className="pt-4 border-t space-y-2">
+                <p className="text-sm font-medium">Clinical Tools</p>
+                <div className="flex flex-col gap-1.5">
+                  <Link href="/bolton-analysis">
+                    <Button variant="outline" size="sm" className="w-full justify-start gap-2 text-xs h-7">
+                      <Scale className="h-3.5 w-3.5 text-cyan-400" /> Bolton Analysis
+                    </Button>
+                  </Link>
+                  <Link href="/ipr-calculator">
+                    <Button variant="outline" size="sm" className="w-full justify-start gap-2 text-xs h-7">
+                      <Scissors className="h-3.5 w-3.5 text-cyan-400" /> IPR Calculator
+                    </Button>
+                  </Link>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
+          <div className="lg:col-span-2">
+          <Tabs defaultValue="scans">
+            <TabsList className="mb-4">
+              <TabsTrigger value="scans" className="gap-2"><Box className="h-3.5 w-3.5" /> 3D Scans</TabsTrigger>
+              <TabsTrigger value="photos" className="gap-2"><Camera className="h-3.5 w-3.5" /> Photos</TabsTrigger>
+            </TabsList>
+            <TabsContent value="scans">
           <Card className="lg:col-span-2">
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <CardTitle>Digital Scans</CardTitle>
@@ -215,9 +270,148 @@ export default function CaseDetail() {
               )}
             </CardContent>
           </Card>
+            </TabsContent>
+            <TabsContent value="photos">
+              <PhotosPanel caseId={caseId} />
+            </TabsContent>
+          </Tabs>
+          </div>
         </div>
       </div>
     </Layout>
+  );
+}
+
+function PhotosPanel({ caseId }: { caseId: number }) {
+  const [photos, setPhotos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [photoType, setPhotoType] = useState("intraoral");
+  const [notes, setNotes] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  const loadPhotos = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/cases/${caseId}/photos`, { credentials: "include" });
+      const data = await res.json();
+      setPhotos(data);
+    } catch { /* ignore */ }
+    setLoading(false);
+  };
+
+  useEffect(() => { loadPhotos(); }, [caseId]);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("type", photoType);
+    formData.append("notes", notes);
+    try {
+      const res = await fetch(`/api/cases/${caseId}/photos/upload`, {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (res.ok) {
+        toast({ title: "Photo uploaded" });
+        loadPhotos();
+        setNotes("");
+      } else {
+        toast({ variant: "destructive", title: "Upload failed" });
+      }
+    } catch {
+      toast({ variant: "destructive", title: "Network error" });
+    }
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleDelete = async (photoId: number) => {
+    await fetch(`/api/photos/${photoId}`, { method: "DELETE", credentials: "include" });
+    setPhotos(prev => prev.filter(p => p.id !== photoId));
+    toast({ title: "Photo deleted" });
+  };
+
+  const photoTypeLabel: Record<string, string> = {
+    intraoral: "Intraoral",
+    extraoral: "Extraoral",
+    opg: "OPG X-ray",
+    panoramic: "Panoramic",
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <CardTitle>Clinical Photos</CardTitle>
+        <div className="flex items-center gap-2">
+          <Select value={photoType} onValueChange={setPhotoType}>
+            <SelectTrigger className="w-36 h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="intraoral">Intraoral</SelectItem>
+              <SelectItem value="extraoral">Extraoral</SelectItem>
+              <SelectItem value="opg">OPG X-ray</SelectItem>
+              <SelectItem value="panoramic">Panoramic</SelectItem>
+            </SelectContent>
+          </Select>
+          <input type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
+          <Button size="sm" className="gap-2 h-8" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
+            {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+            Upload Photo
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        ) : photos.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
+            <ImageIcon className="h-8 w-8 mx-auto mb-2 opacity-20" />
+            <p>No photos uploaded yet</p>
+            <p className="text-sm mt-1">Upload intraoral, extraoral, or OPG/panoramic images</p>
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {photos.map((photo) => (
+              <div key={photo.id} className="border rounded-lg overflow-hidden bg-card">
+                <div className="aspect-video bg-muted/30 flex items-center justify-center">
+                  {photo.originalName?.match(/\.(jpg|jpeg|png|webp)$/i) ? (
+                    <img
+                      src={`/api/photos/${photo.id}/file`}
+                      alt={photo.originalName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <File className="h-12 w-12 text-muted-foreground opacity-40" />
+                  )}
+                </div>
+                <div className="p-2.5 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="outline" className="text-[10px]">{photoTypeLabel[photo.type] ?? photo.type}</Badge>
+                    <span className="text-[10px] text-muted-foreground">{new Date(photo.createdAt).toLocaleDateString()}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate">{photo.originalName}</p>
+                  <div className="flex items-center gap-1 pt-0.5">
+                    <a href={`/api/photos/${photo.id}/file`} target="_blank" rel="noopener noreferrer" className="flex-1">
+                      <Button variant="outline" size="sm" className="w-full h-6 text-[10px]">View</Button>
+                    </a>
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive hover:text-destructive" onClick={() => handleDelete(photo.id)}>
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -260,7 +454,12 @@ function UpdateStatusDialog({ caseData }: { caseData: any }) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="_header_new" disabled className="text-[10px] text-muted-foreground uppercase font-semibold">New Workflow</SelectItem>
                 {STATUS_FLOW.map(s => (
+                  <SelectItem key={s} value={s}>{formatStatus(s)}</SelectItem>
+                ))}
+                <SelectItem value="_header_legacy" disabled className="text-[10px] text-muted-foreground uppercase font-semibold mt-1">Legacy</SelectItem>
+                {LEGACY_STATUS_FLOW.filter(s => !STATUS_FLOW.includes(s)).map(s => (
                   <SelectItem key={s} value={s}>{formatStatus(s)}</SelectItem>
                 ))}
               </SelectContent>

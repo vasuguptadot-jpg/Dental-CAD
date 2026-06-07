@@ -13,7 +13,10 @@ function generateCaseCode(): string {
   return `OC-${num}`;
 }
 
-const VALID_STATUSES = ["new", "scan_uploaded", "analysis_completed", "treatment_planning", "approved", "manufacturing"];
+const VALID_STATUSES = [
+  "draft", "in_planning", "under_review", "approved", "active", "completed",
+  "new", "scan_uploaded", "analysis_completed", "treatment_planning", "manufacturing",
+];
 
 router.get("/", async (req, res) => {
   const patientId = req.query.patientId ? parseInt(String(req.query.patientId), 10) : undefined;

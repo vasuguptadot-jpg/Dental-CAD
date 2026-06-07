@@ -8,6 +8,8 @@ import dashboardRouter from "./dashboard";
 import analysisRouter from "./analysis";
 import aiCopilotRouter from "./ai-copilot";
 import analyticsRouter from "./analytics";
+import searchRouter from "./search";
+import photosRouter from "./photos";
 import { auditMiddleware } from "../middleware/audit";
 
 const router: IRouter = Router();
@@ -24,5 +26,7 @@ router.use("/analytics", analyticsRouter);
 router.use("/", scansRouter);
 router.use("/", analysisRouter);
 router.use("/", aiCopilotRouter);
+router.use("/", searchRouter);
+router.use("/", photosRouter);
 
 export default router;

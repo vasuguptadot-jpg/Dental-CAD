@@ -18,6 +18,7 @@ import {
   SplitSquareHorizontal, Activity
 } from "lucide-react";
 
+import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { runSegmentation, type ToothSegment } from "@/lib/segmentation-engine";
 import {
   applyTransformToGroup, type ToothTransform
@@ -305,6 +306,21 @@ export default function AlignerStaging() {
     if (currentStage >= stages.length - 1) setCurrentStage(0);
     startAnimation();
   }, [isPlaying, currentStage, stages.length, stopAnimation, startAnimation]);
+
+  const handleResetView = () => {
+    if (cameraRef.current && controlsRef.current) {
+      cameraRef.current.position.set(0, 25, 160);
+      controlsRef.current.reset();
+    }
+  };
+
+  useKeyboardShortcuts({
+    enabled: loadStatus === "ready",
+    onPlayPause: togglePlay,
+    onResetView: handleResetView,
+    onNextTooth: () => { stopAnimation(); setCurrentStage(s => Math.min(stages.length - 1, s + 1)); },
+    onPrevTooth: () => { stopAnimation(); setCurrentStage(s => Math.max(0, s - 1)); },
+  });
 
   useEffect(() => { return () => { if (animIntervalRef.current) clearInterval(animIntervalRef.current); }; }, []);
 

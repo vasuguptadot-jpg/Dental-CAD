@@ -7,16 +7,27 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 
 const STATUS_COLORS: Record<string, string> = {
+  "draft": "hsl(var(--muted-foreground))",
+  "in_planning": "hsl(var(--primary))",
+  "under_review": "hsl(220 80% 70%)",
+  "approved": "hsl(var(--chart-2))",
+  "active": "hsl(142 76% 50%)",
+  "completed": "hsl(var(--chart-5))",
   "new": "hsl(var(--muted-foreground))",
   "scan_uploaded": "hsl(var(--chart-4))",
   "analysis_completed": "hsl(var(--chart-3))",
   "treatment_planning": "hsl(var(--primary))",
-  "approved": "hsl(var(--chart-2))",
   "manufacturing": "hsl(var(--chart-5))",
 };
 
 const formatStatus = (status: string) => {
-  return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  const labels: Record<string, string> = {
+    draft: "Draft", in_planning: "In Planning", under_review: "Under Review",
+    approved: "Approved", active: "Active", completed: "Completed",
+    new: "New", scan_uploaded: "Scan Uploaded", analysis_completed: "Analysis Completed",
+    treatment_planning: "Treatment Planning", manufacturing: "Manufacturing",
+  };
+  return labels[status] ?? status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };
 
 export default function Dashboard() {
@@ -34,111 +45,92 @@ export default function Dashboard() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard 
-            title="Total Patients" 
-            value={stats?.totalPatients} 
-            icon={<Users className="h-4 w-4 text-muted-foreground" />} 
-            loading={statsLoading} 
+          <StatCard
+            title="Total Patients"
+            value={stats?.totalPatients}
+            icon={<Users className="h-4 w-4 text-muted-foreground" />}
+            isLoading={statsLoading}
+            href="/patients"
           />
-          <StatCard 
-            title="Active Cases" 
-            value={stats?.activeCases} 
-            icon={<Activity className="h-4 w-4 text-primary" />} 
-            loading={statsLoading} 
+          <StatCard
+            title="Total Cases"
+            value={stats?.totalCases}
+            icon={<Activity className="h-4 w-4 text-muted-foreground" />}
+            isLoading={statsLoading}
+            href="/cases"
           />
-          <StatCard 
-            title="New This Month" 
-            value={stats?.newCasesThisMonth} 
-            icon={<ArrowUpRight className="h-4 w-4 text-chart-3" />} 
-            loading={statsLoading} 
+          <StatCard
+            title="Active Cases"
+            value={stats?.activeCases}
+            icon={<Layers className="h-4 w-4 text-muted-foreground" />}
+            isLoading={statsLoading}
+            href="/cases"
           />
-          <StatCard 
-            title="Scans Uploaded" 
-            value={stats?.scansUploaded} 
-            icon={<Upload className="h-4 w-4 text-chart-4" />} 
-            loading={statsLoading} 
+          <StatCard
+            title="Scans Uploaded"
+            value={stats?.totalScans}
+            icon={<Upload className="h-4 w-4 text-muted-foreground" />}
+            isLoading={statsLoading}
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Chart */}
-          <Card className="lg:col-span-2">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+          {/* Case Status Chart */}
+          <Card className="lg:col-span-3">
             <CardHeader>
               <CardTitle>Case Status Breakdown</CardTitle>
-              <CardDescription>Current distribution of active cases across treatment stages</CardDescription>
+              <CardDescription>Distribution of cases across the treatment lifecycle</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[300px] w-full">
-                {breakdownLoading ? (
-                  <Skeleton className="h-full w-full" />
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={breakdownData || []} margin={{ top: 20, right: 30, left: 0, bottom: 25 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                      <XAxis 
-                        dataKey="status" 
-                        tickFormatter={formatStatus}
-                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                        tickLine={false}
-                        axisLine={false}
-                        angle={-45}
-                        textAnchor="end"
-                      />
-                      <YAxis 
-                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                        tickLine={false}
-                        axisLine={false}
-                        allowDecimals={false}
-                      />
-                      <Tooltip 
-                        cursor={{ fill: 'hsl(var(--muted)/0.5)' }}
-                        contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
-                        formatter={(value: number) => [value, "Cases"]}
-                        labelFormatter={formatStatus}
-                      />
-                      <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                        {breakdownData?.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.status] || "hsl(var(--primary))"} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
+              {breakdownLoading ? (
+                <Skeleton className="h-64 w-full" />
+              ) : (
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={breakdownData?.breakdown ?? []} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis
+                      dataKey="status"
+                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                      tickFormatter={formatStatus}
+                    />
+                    <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                    <Tooltip
+                      contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+                      labelFormatter={formatStatus}
+                    />
+                    <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                      {(breakdownData?.breakdown ?? []).map((entry: any) => (
+                        <Cell key={entry.status} fill={STATUS_COLORS[entry.status] ?? "hsl(var(--primary))"} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
 
-          {/* Activity Feed */}
-          <Card>
+          {/* Recent Activity */}
+          <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>Latest updates across your cases</CardDescription>
+              <CardDescription>Latest updates across all cases</CardDescription>
             </CardHeader>
             <CardContent>
               {activityLoading ? (
-                <div className="space-y-4">
-                  {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-12 w-full" />)}
+                <div className="space-y-3">
+                  {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
                 </div>
-              ) : activityData?.length === 0 ? (
-                <div className="text-center py-8 text-sm text-muted-foreground">No recent activity</div>
+              ) : activityData?.activity?.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">No recent activity</p>
               ) : (
-                <div className="space-y-6">
-                  {activityData?.map((item) => (
-                    <div key={item.id} className="flex gap-4">
-                      <div className="mt-1 bg-muted p-2 rounded-full h-fit">
-                        {item.type === 'scan_uploaded' ? <Upload className="h-4 w-4 text-chart-4" /> : 
-                         item.type === 'status_changed' ? <Layers className="h-4 w-4 text-primary" /> : 
-                         <Activity className="h-4 w-4 text-muted-foreground" />}
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium leading-none">
-                          {item.patientName && <span className="font-semibold">{item.patientName}</span>}
-                          {item.patientName && item.caseCode && " - "}
-                          {item.caseCode && <span className="text-muted-foreground">{item.caseCode}</span>}
-                        </p>
-                        <p className="text-sm text-muted-foreground">{item.description}</p>
-                        <p className="text-xs text-muted-foreground/70">
-                          {new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                <div className="space-y-3">
+                  {activityData?.activity?.map((item: any) => (
+                    <div key={item.id} className="flex gap-3 text-sm border-b pb-3 last:border-0 last:pb-0">
+                      <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-foreground text-sm leading-snug">{item.description}</p>
+                        <p className="text-muted-foreground text-xs mt-0.5">
+                          {new Date(item.createdAt).toLocaleString()}
                         </p>
                       </div>
                     </div>
@@ -153,20 +145,29 @@ export default function Dashboard() {
   );
 }
 
-function StatCard({ title, value, icon, loading }: { title: string, value?: number, icon: React.ReactNode, loading: boolean }) {
-  return (
-    <Card>
+function StatCard({
+  title, value, icon, isLoading, href
+}: {
+  title: string; value?: number; icon: React.ReactNode; isLoading?: boolean; href?: string;
+}) {
+  const content = (
+    <Card className="hover:border-primary/30 transition-colors">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
         {icon}
       </CardHeader>
       <CardContent>
-        {loading ? (
+        {isLoading ? (
           <Skeleton className="h-8 w-16" />
         ) : (
-          <div className="text-2xl font-bold">{value?.toLocaleString() || 0}</div>
+          <div className="flex items-end gap-2">
+            <div className="text-3xl font-bold">{value ?? 0}</div>
+            {href && <ArrowUpRight className="h-4 w-4 text-muted-foreground mb-1" />}
+          </div>
         )}
       </CardContent>
     </Card>
   );
+
+  return href ? <Link href={href}>{content}</Link> : content;
 }

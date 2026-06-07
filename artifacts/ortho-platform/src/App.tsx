@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { ThemeProvider } from "@/components/theme-provider";
+import { OnboardingWizard } from "@/components/onboarding-wizard";
 import NotFound from "@/pages/not-found";
 
 import Login from "@/pages/login";
@@ -20,17 +21,18 @@ import TreatmentPlanner from "@/pages/treatment-planner";
 import AlignerStaging from "@/pages/aligner-staging";
 import Manufacturing from "@/pages/manufacturing";
 import Analytics from "@/pages/analytics";
+import BoltonAnalysis from "@/pages/bolton-analysis";
+import IPRCalculator from "@/pages/ipr-calculator";
+import ProgressTracker from "@/pages/progress-tracker";
+import PlanComparison from "@/pages/plan-comparison";
 
 const queryClient = new QueryClient();
 
-// Protected Route Wrapper
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
-  if (isLoading) {
-    return null; // Or a full screen spinner
-  }
+  if (isLoading) return null;
 
   if (!user) {
     setLocation("/login");
@@ -40,13 +42,12 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   return <Component />;
 }
 
-// Redirect if already logged in
 function LoginRoute() {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
   if (isLoading) return null;
-  
+
   if (user) {
     setLocation("/dashboard");
     return null;
@@ -60,8 +61,7 @@ function Router() {
     <Switch>
       <Route path="/" component={LoginRoute} />
       <Route path="/login" component={LoginRoute} />
-      
-      {/* Protected Routes */}
+
       <Route path="/dashboard"><ProtectedRoute component={Dashboard} /></Route>
       <Route path="/patients"><ProtectedRoute component={PatientsList} /></Route>
       <Route path="/patients/:patientId"><ProtectedRoute component={PatientDetail} /></Route>
@@ -78,8 +78,26 @@ function Router() {
       <Route path="/manufacturing/:scanId"><ProtectedRoute component={Manufacturing} /></Route>
       <Route path="/analytics"><ProtectedRoute component={Analytics} /></Route>
 
+      {/* Clinical Tools */}
+      <Route path="/bolton-analysis"><ProtectedRoute component={BoltonAnalysis} /></Route>
+      <Route path="/ipr-calculator"><ProtectedRoute component={IPRCalculator} /></Route>
+      <Route path="/progress-tracker"><ProtectedRoute component={ProgressTracker} /></Route>
+      <Route path="/progress/:caseId"><ProtectedRoute component={ProgressTracker} /></Route>
+      <Route path="/plan-comparison"><ProtectedRoute component={PlanComparison} /></Route>
+      <Route path="/plan-comparison/:caseId"><ProtectedRoute component={PlanComparison} /></Route>
+
       <Route component={NotFound} />
     </Switch>
+  );
+}
+
+function AppInner() {
+  const { user } = useAuth();
+  return (
+    <>
+      <Router />
+      {user && <OnboardingWizard />}
+    </>
   );
 }
 
@@ -90,7 +108,7 @@ function App() {
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
             <AuthProvider>
-              <Router />
+              <AppInner />
             </AuthProvider>
           </WouterRouter>
           <Toaster />
