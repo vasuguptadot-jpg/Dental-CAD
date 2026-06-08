@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "7FHgME6GOt3m1uC2_QBBH"
+uri = "file://artifacts/ortho-mobile/assets/images/icon.png"
+type = "image"
+title = "ortho mobile icon"
