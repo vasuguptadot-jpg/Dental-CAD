@@ -6,7 +6,7 @@ import {
   Activity, LayoutDashboard, Users, UserSquare2, LogOut, Loader2,
   Moon, Sun, Brain, Bot, Layers, Cpu, Printer, BarChart3,
   Scale, Scissors, TrendingUp, GitCompare, Camera, Keyboard, HelpCircle,
-  Paperclip, LineChart, FlaskConical, ScanLine
+  Paperclip, LineChart, FlaskConical, ScanLine, ShieldAlert, Smartphone, ExternalLink
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme-provider";
@@ -159,6 +159,24 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </Button>
             </Link>
           ))}
+
+          <div className="px-2 py-1.5 mt-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+            <ExternalLink className="h-3 w-3 text-muted-foreground" /> Products
+          </div>
+          <a href="/security-analyzer/" target="_blank" rel="noopener noreferrer" className="block">
+            <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground">
+              <ShieldAlert className="h-4 w-4" />
+              Security Analyzer
+              <ExternalLink className="h-3 w-3 ml-auto opacity-50" />
+            </Button>
+          </a>
+          <a href="/ortho-mobile/" target="_blank" rel="noopener noreferrer" className="block">
+            <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground">
+              <Smartphone className="h-4 w-4" />
+              Mobile Companion
+              <ExternalLink className="h-3 w-3 ml-auto opacity-50" />
+            </Button>
+          </a>
         </nav>
 
         <div className="p-3 border-t space-y-1">

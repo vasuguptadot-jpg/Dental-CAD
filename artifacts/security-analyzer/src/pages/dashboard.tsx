@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { AlertTriangle, CheckCircle2, Shield, Activity, RefreshCw, X, ChevronRight, Play, Server, Code, FileText, Check, ShieldAlert } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Shield, Activity, RefreshCw, X, ChevronRight, Play, Server, Code, FileText, Check, ShieldAlert, LayoutDashboard, Smartphone } from "lucide-react";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +57,32 @@ export function SecurityDashboard() {
           <div className="flex items-center gap-2 text-muted-foreground">
             <Activity className="h-4 w-4" />
             <span>SYS_NORMAL</span>
+          </div>
+          <div className="hidden sm:flex items-center gap-1 border border-border/50 rounded-md p-1 bg-background/40">
+            <a
+              href="/"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors font-mono"
+              title="OrthoVision Platform"
+            >
+              <LayoutDashboard className="h-3.5 w-3.5" />
+              Platform
+            </a>
+            <div className="w-px h-4 bg-border/50" />
+            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs text-primary bg-primary/10 font-mono font-semibold cursor-default">
+              <Shield className="h-3.5 w-3.5" />
+              Security
+            </span>
+            <div className="w-px h-4 bg-border/50" />
+            <a
+              href="/ortho-mobile/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors font-mono"
+              title="OrthoVision Mobile"
+            >
+              <Smartphone className="h-3.5 w-3.5" />
+              Mobile
+            </a>
           </div>
         </div>
       </header>

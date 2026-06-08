@@ -26,6 +26,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: "cpu", selected: "cpu.fill" }} />
         <Label>Copilot</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="more">
+        <Icon sf={{ default: "ellipsis.circle", selected: "ellipsis.circle.fill" }} />
+        <Label>More</Label>
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
@@ -107,6 +111,18 @@ function ClassicTabLayout() {
               <SymbolView name="cpu" tintColor={color} size={22} />
             ) : (
               <Feather name="cpu" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="more"
+        options={{
+          title: "More",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="ellipsis.circle" tintColor={color} size={22} />
+            ) : (
+              <Feather name="more-horizontal" size={22} color={color} />
             ),
         }}
       />
