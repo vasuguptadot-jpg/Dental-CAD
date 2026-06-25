@@ -11,6 +11,75 @@ env = { "CI" = "true" }
 [workflows]
 runButton = "Project"
 
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "API Server"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "OrthoVision Platform"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Security Analyzer"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "OrthoVision Mobile"
+
+[[workflows.workflow]]
+name = "API Server"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PORT=8080 pnpm --filter @workspace/api-server run dev"
+waitForPort = 8080
+
+[[workflows.workflow]]
+name = "OrthoVision Platform"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PORT=21567 BASE_PATH=/ pnpm --filter @workspace/ortho-platform run dev"
+waitForPort = 3000
+
+[[workflows.workflow]]
+name = "Security Analyzer"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PORT=23881 BASE_PATH=/security-analyzer/ pnpm --filter @workspace/security-analyzer run dev"
+waitForPort = 3001
+
+[[workflows.workflow]]
+name = "OrthoVision Mobile"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PORT=21633 BASE_PATH=/ortho-mobile/ pnpm --filter @workspace/ortho-mobile run dev"
+waitForPort = 3002
+
 [agent]
 stack = "PNPM_WORKSPACE"
 expertMode = true
