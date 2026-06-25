@@ -149,6 +149,10 @@ export default function Manufacturing() {
     />
   );
 
+  return <ManufacturingContent scanId={scanId} />;
+}
+
+function ManufacturingContent({ scanId }: { scanId: number }) {
   // Load state
   const [loadState, setLoadState] = useState<LoadState>("idle");
   const [scanMeta, setScanMeta] = useState<ScanMeta | null>(null);

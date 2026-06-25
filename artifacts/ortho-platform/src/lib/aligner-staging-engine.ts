@@ -276,7 +276,7 @@ function generatePhases(summaries: ToothMovementSummary[], totalStages: number):
   // Identify which teeth are most active in each phase
   const phase1Teeth = summaries.filter(s => s.totalTranslationMm > 0.5).map(s => s.fdiNumber).slice(0, 6);
   const phase2Teeth = summaries.filter(s => s.maxRotationDeg > 5).map(s => s.fdiNumber).slice(0, 6);
-  const phase3Teeth = summaries.filter(s => s.difficulty === "complex" || Math.abs(s.totalTranslationMm - 0) < 0.5).map(s => s.fdiNumber).slice(0, 4);
+  const phase3Teeth = summaries.filter(s => s.complexity === "complex" || Math.abs(s.totalTranslationMm - 0) < 0.5).map(s => s.fdiNumber).slice(0, 4);
 
   return [
     {

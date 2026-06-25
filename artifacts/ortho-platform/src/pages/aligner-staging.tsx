@@ -63,6 +63,11 @@ export default function AlignerStaging() {
     />
   );
 
+  return <AlignerStagingContent scanId={scanId} />;
+}
+
+function AlignerStagingContent({ scanId }: { scanId: number }) {
+  const [, navigate] = useLocation();
   const { toast } = useToast();
 
   // Three.js refs
@@ -147,7 +152,14 @@ export default function AlignerStaging() {
     const animate = () => { animId = requestAnimationFrame(animate); controls.update(); renderer.render(scene, cam); };
     animate();
 
-    return () => { window.removeEventListener("resize", handleResize); cancelAnimationFrame(animId); renderer.dispose(); };
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      cancelAnimationFrame(animId);
+      if (renderer.domElement.parentNode) {
+        renderer.domElement.parentNode.removeChild(renderer.domElement);
+      }
+      renderer.dispose();
+    };
   }, []);
 
   // ─── Load Scene ───────────────────────────────────────────────────────────

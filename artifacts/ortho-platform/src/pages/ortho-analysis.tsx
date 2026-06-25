@@ -144,6 +144,9 @@ export default function OrthoAnalysis() {
     return () => {
       window.removeEventListener("resize", handleResize);
       cancelAnimationFrame(animFrameId);
+      if (renderer.domElement.parentNode) {
+        renderer.domElement.parentNode.removeChild(renderer.domElement);
+      }
       renderer.dispose();
     };
   }, []);

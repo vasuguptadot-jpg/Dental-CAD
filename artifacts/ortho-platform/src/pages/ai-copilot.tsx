@@ -172,6 +172,10 @@ export default function AICopilot() {
     />
   );
 
+  return <AICopilotContent scanId={scanId} />;
+}
+
+function AICopilotContent({ scanId }: { scanId: number }) {
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);

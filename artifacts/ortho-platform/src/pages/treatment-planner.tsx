@@ -86,6 +86,11 @@ export default function TreatmentPlanner() {
     />
   );
 
+  return <TreatmentPlannerContent scanId={scanId} />;
+}
+
+function TreatmentPlannerContent({ scanId }: { scanId: number }) {
+  const [, navigate] = useLocation();
   const { toast } = useToast();
 
   // Three.js refs
@@ -201,6 +206,9 @@ export default function TreatmentPlanner() {
     return () => {
       window.removeEventListener("resize", handleResize);
       cancelAnimationFrame(animId);
+      if (renderer.domElement.parentNode) {
+        renderer.domElement.parentNode.removeChild(renderer.domElement);
+      }
       renderer.dispose();
     };
   }, []);

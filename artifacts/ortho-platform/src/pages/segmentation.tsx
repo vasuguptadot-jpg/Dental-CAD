@@ -221,20 +221,45 @@ export default function SegmentationViewer() {
         mountRef.current.removeEventListener("click", onClick);
       }
       cancelAnimationFrame(animationFrameId);
+      if (renderer.domElement.parentNode) {
+        renderer.domElement.parentNode.removeChild(renderer.domElement);
+      }
       renderer.dispose();
     };
   }, [selectedToothFdi]);
 
-  // Handle restoring data on mount
+  // Handle restoring data on mount — also reload geometry for 3D view
   useEffect(() => {
     if (analysisData && analysisData.status === "completed" && status === "idle") {
       setStatus("completed");
       setSegments(analysisData.segmentationData as unknown as ToothSegment[]);
       setLandmarks(analysisData.landmarksData?.teeth as unknown as ToothLandmarks[] || []);
       setMeasurements(analysisData.measurementsData as unknown as MeasurementSet);
-      setHas3DData(false); // Can't render without geom
+      setHas3DData(true);
     }
   }, [analysisData, status]);
+
+  // Auto-load 3D geometry on mount so viewer is never blank
+  useEffect(() => {
+    if (!scanData || !sceneRef.current) return;
+    if (status !== "idle" && status !== "completed") return;
+    if (originalMeshRef.current) return; // already loaded
+
+    loadOriginalGeometry().then(geo => {
+      if (!sceneRef.current) return;
+      const mat = new THREE.MeshPhongMaterial({ color: 0x8ecfff, specular: 0x222222, shininess: 40, side: THREE.DoubleSide });
+      const mesh = new THREE.Mesh(geo, mat);
+      originalMeshRef.current = mesh;
+      sceneRef.current.add(mesh);
+      geo.computeBoundingSphere();
+      const r = geo.boundingSphere?.radius || 50;
+      if (cameraRef.current) {
+        cameraRef.current.position.set(0, 0, r * 2.5);
+        cameraRef.current.lookAt(0, 0, 0);
+      }
+      controlsRef.current?.target.set(0, 0, 0);
+    }).catch(() => {/* no file uploaded yet */});
+  }, [scanData]);
 
   // Load original geometry for analysis
   const loadOriginalGeometry = async (): Promise<THREE.BufferGeometry> => {
