@@ -507,4 +507,133 @@ Keep responses evidence-based and clinically precise. Always frame as advisory r
   }
 });
 
+// POST /api/ai-copilot/auto-align — AI-driven tooth alignment suggestions
+router.post("/ai-copilot/auto-align", async (req: Request, res: Response) => {
+  const apiKey = process.env["GROQ_API_KEY"];
+  if (!apiKey) {
+    res.status(500).json({ error: "GROQ_API_KEY not configured" });
+    return;
+  }
+
+  const { teeth, analysisData } = req.body as {
+    teeth: Array<{ fdi: number; label: string; x: number; y: number; z: number; type: string }>;
+    analysisData?: Record<string, unknown>;
+  };
+
+  if (!teeth || teeth.length === 0) {
+    res.status(400).json({ error: "teeth array required" });
+    return;
+  }
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+
+  const contextMsg = analysisData ? buildContextMessage(analysisData) : "";
+
+  const teethJson = JSON.stringify(
+    teeth.map((t) => ({
+      fdi: t.fdi,
+      label: t.label,
+      type: t.type,
+      x: parseFloat(t.x.toFixed(2)),
+      y: parseFloat(t.y.toFixed(2)),
+      z: parseFloat(t.z.toFixed(2)),
+    })),
+    null,
+    2
+  );
+
+  const prompt = `${contextMsg}
+You are an expert orthodontic alignment AI. Analyze the 3D centroid positions of the following teeth (in millimeters, scan coordinate space) and suggest alignment movements to improve arch form, symmetry, and occlusion.
+
+TEETH POSITIONS:
+${teethJson}
+
+Analysis instructions:
+1. Compare left/right symmetry: corresponding teeth (e.g. FDI 13 vs 23) should have near-mirror X positions
+2. Check spacing between adjacent teeth using their X/Z positions
+3. Identify rotations needed based on expected vs actual positions
+4. Check occlusal leveling (Y positions should follow a smooth curve)
+5. Keep all movements conservative: tx/ty/tz max ±3mm, rx/ry/rz max ±10°
+
+Return ONLY this JSON object — no markdown, no explanations:
+{
+  "overallAssessment": "2-3 sentence clinical summary of the arch condition",
+  "crowdingScore": 0-10,
+  "symmetryScore": 0-10,
+  "estimatedImprovement": "brief description of expected outcome",
+  "suggestions": [
+    {
+      "fdi": <number>,
+      "label": "<tooth label>",
+      "tx": <mm>,
+      "ty": <mm>,
+      "tz": <mm>,
+      "rx": <degrees>,
+      "ry": <degrees>,
+      "rz": <degrees>,
+      "rationale": "<1 sentence clinical rationale>",
+      "confidence": <0-100>,
+      "priority": "high|medium|low"
+    }
+  ]
+}
+Only include teeth that genuinely need movement. Omit teeth that are already well-positioned.`;
+
+  try {
+    const response = await fetch(GROQ_API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: prompt },
+        ],
+        max_tokens: 3000,
+        temperature: 0.15,
+        stream: false,
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      res.write(`data: ${JSON.stringify({ error: `Groq API error: ${errText}` })}\n\n`);
+      res.end();
+      return;
+    }
+
+    const data = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+    const content = data.choices?.[0]?.message?.content ?? "{}";
+
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      res.write(`data: ${JSON.stringify({ error: "Could not parse AI alignment response" })}\n\n`);
+      res.end();
+      return;
+    }
+
+    try {
+      const plan = JSON.parse(jsonMatch[0]) as unknown;
+      res.write(`data: ${JSON.stringify({ plan })}\n\n`);
+      res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+      res.end();
+    } catch {
+      res.write(`data: ${JSON.stringify({ error: "Invalid JSON in AI response" })}\n\n`);
+      res.end();
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    res.write(`data: ${JSON.stringify({ error: message })}\n\n`);
+    res.end();
+  }
+});
+
 export default router;

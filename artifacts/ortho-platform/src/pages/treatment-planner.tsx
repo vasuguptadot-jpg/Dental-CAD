@@ -34,6 +34,25 @@ import {
   buildMovementArrows, computeBoundingSpheres,
   type CollisionReport, type CollisionSeverity,
 } from "@/lib/collision-engine";
+import { GumDeformer } from "@/lib/gum-deformer";
+
+interface AlignSuggestion {
+  fdi: number;
+  label: string;
+  tx: number; ty: number; tz: number;
+  rx: number; ry: number; rz: number;
+  rationale: string;
+  confidence: number;
+  priority: "high" | "medium" | "low";
+}
+
+interface AlignResult {
+  overallAssessment: string;
+  crowdingScore: number;
+  symmetryScore: number;
+  estimatedImprovement: string;
+  suggestions: AlignSuggestion[];
+}
 
 const FDI_NAMES: Record<number, string> = {
   11:"UR Central",12:"UR Lateral",13:"UR Canine",14:"UR 1st PM",15:"UR 2nd PM",16:"UR 1st Molar",17:"UR 2nd Molar",18:"UR 3rd Molar",
@@ -106,6 +125,8 @@ function TreatmentPlannerContent({ scanId }: { scanId: number }) {
   const safeZoneGroupRef = useRef<THREE.Group | null>(null);
   const arrowGroupRef = useRef<THREE.Group | null>(null);
   const spheresRef = useRef<ReturnType<typeof computeBoundingSpheres>>(new Map());
+  const gumMeshRef = useRef<THREE.Mesh | null>(null);
+  const gumDeformerRef = useRef<GumDeformer | null>(null);
 
   // App state
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
@@ -125,6 +146,11 @@ function TreatmentPlannerContent({ scanId }: { scanId: number }) {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [showToothChart, setShowToothChart] = useState(false);
+  const [aiAlignLoading, setAiAlignLoading] = useState(false);
+  const [aiAlignResult, setAiAlignResult] = useState<AlignResult | null>(null);
+  const [acceptedSuggestions, setAcceptedSuggestions] = useState<Set<number>>(new Set());
+  const [rejectedSuggestions, setRejectedSuggestions] = useState<Set<number>>(new Set());
+  const [showAiPanel, setShowAiPanel] = useState(false);
 
   const { data: scanData } = useGetScan(scanId, { query: { enabled: !!scanId } });
   const { data: analysisData } = useGetScanAnalysis(scanId, { query: { enabled: !!scanId } });
@@ -174,8 +200,9 @@ function TreatmentPlannerContent({ scanId }: { scanId: number }) {
     };
     window.addEventListener("resize", handleResize);
 
-    // Click to select tooth
+    // Click to select tooth — with nearest-centroid fallback for accurate selection near gum zones
     const raycaster = new THREE.Raycaster();
+    raycaster.params.Mesh = { threshold: 0 };
     const mouse = new THREE.Vector2();
     const onClick = (e: MouseEvent) => {
       if (!mountRef.current) return;
@@ -183,15 +210,67 @@ function TreatmentPlannerContent({ scanId }: { scanId: number }) {
       mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(mouse, cam);
+
       const meshes: THREE.Mesh[] = [];
       toothGroupsRef.current.forEach(g => g.traverse(c => { if (c instanceof THREE.Mesh) meshes.push(c); }));
-      const hits = raycaster.intersectObjects(meshes);
+
+      // Also include gum mesh in raycast targets
+      if (gumMeshRef.current) meshes.push(gumMeshRef.current);
+
+      const hits = raycaster.intersectObjects(meshes, false);
+
       if (hits.length > 0) {
+        const hitPoint = hits[0].point;
+
+        // Walk up to find fdiNumber on tooth groups
         let obj: THREE.Object3D | null = hits[0].object;
         while (obj && !obj.userData.fdiNumber) obj = obj.parent;
-        if (obj?.userData.fdiNumber) setSelectedFdi(obj.userData.fdiNumber as number);
+
+        if (obj?.userData.fdiNumber) {
+          // We hit a tooth — but verify by comparing hit point to centroid
+          // If this hit is actually closer to a neighbouring tooth centroid, select that instead
+          const hitFdi = obj.userData.fdiNumber as number;
+          let bestFdi = hitFdi;
+          let bestDist = Infinity;
+
+          toothGroupsRef.current.forEach((group, fdi) => {
+            const worldPos = new THREE.Vector3();
+            group.getWorldPosition(worldPos);
+            const d = hitPoint.distanceTo(worldPos);
+            if (d < bestDist) { bestDist = d; bestFdi = fdi; }
+          });
+
+          setSelectedFdi(bestFdi);
+        } else {
+          // Hit the gum mesh — find nearest tooth centroid to the hit point
+          let bestFdi: number | null = null;
+          let bestDist = Infinity;
+
+          toothGroupsRef.current.forEach((group, fdi) => {
+            const worldPos = new THREE.Vector3();
+            group.getWorldPosition(worldPos);
+            const d = hitPoint.distanceTo(worldPos);
+            if (d < bestDist) { bestDist = d; bestFdi = fdi; }
+          });
+
+          if (bestFdi !== null && bestDist < 20) {
+            setSelectedFdi(bestFdi);
+          }
+        }
       } else {
-        setSelectedFdi(null);
+        // No hit — try nearest tooth along the ray within a generous threshold
+        const ray = raycaster.ray;
+        let bestFdi: number | null = null;
+        let bestDist = 12; // max mm threshold
+
+        toothGroupsRef.current.forEach((group, fdi) => {
+          const worldPos = new THREE.Vector3();
+          group.getWorldPosition(worldPos);
+          const d = ray.distanceToPoint(worldPos);
+          if (d < bestDist) { bestDist = d; bestFdi = fdi; }
+        });
+
+        setSelectedFdi(bestFdi);
       }
     };
     mountRef.current.addEventListener("click", onClick);
@@ -250,6 +329,8 @@ function TreatmentPlannerContent({ scanId }: { scanId: number }) {
     [collisionGroupRef, safeZoneGroupRef, arrowGroupRef].forEach(r => {
       if (r.current) { scene.remove(r.current); r.current = null; }
     });
+    if (gumMeshRef.current) { scene.remove(gumMeshRef.current); gumMeshRef.current = null; }
+    if (gumDeformerRef.current) { gumDeformerRef.current.dispose(); gumDeformerRef.current = null; }
 
     setStatus("loading");
     setProgress(5);
@@ -342,6 +423,29 @@ function TreatmentPlannerContent({ scanId }: { scanId: number }) {
       setCanUndo(false);
       setCanRedo(false);
 
+      // ── Gum base mesh (full original geometry rendered behind teeth) ──
+      // This deforms when teeth move, creating a stretching/following gum effect
+      const gumMat = new THREE.MeshPhongMaterial({
+        color: new THREE.Color("#c47a7a"),
+        specular: new THREE.Color("#220808"),
+        shininess: 10,
+        transparent: true,
+        opacity: 0.60,
+        side: THREE.DoubleSide,
+      });
+      const gumDeformer = new GumDeformer(geo as THREE.BufferGeometry);
+      const gumMesh = new THREE.Mesh(gumDeformer.geometry, gumMat);
+      gumMesh.name = "gum_base";
+      gumMesh.renderOrder = -1;
+      scene.add(gumMesh);
+      gumMeshRef.current = gumMesh;
+
+      // Build influence map in background (non-blocking for large meshes)
+      setTimeout(() => {
+        gumDeformer.buildInfluenceMap(segs);
+        gumDeformerRef.current = gumDeformer;
+      }, 50);
+
       // Run initial collision check
       const initialSpheres = computeBoundingSpheres(segs, toothGroupsRef.current);
       spheresRef.current = initialSpheres;
@@ -430,6 +534,13 @@ function TreatmentPlannerContent({ scanId }: { scanId: number }) {
       const arrows = buildMovementArrows(newTransform, worldPos);
       sceneRef.current.add(arrows);
       arrowGroupRef.current = arrows;
+    }
+
+    // ── Gum deformation: stretch gum mesh to follow moved tooth ──
+    if (gumDeformerRef.current) {
+      const tMap = new Map<number, { tx: number; ty: number; tz: number }>();
+      newTransforms.forEach((t, f) => tMap.set(f, { tx: t.tx, ty: t.ty, tz: t.tz }));
+      gumDeformerRef.current.update(tMap);
     }
   }, [transforms, segments]);
 
@@ -580,15 +691,16 @@ function TreatmentPlannerContent({ scanId }: { scanId: number }) {
       suggestions.forEach(s => {
         if (!transforms.has(s.fdi)) return;
         const current = transforms.get(s.fdi)!;
-        setTransforms(prev => new Map(prev).set(s.fdi, {
+        const newT = {
           ...current,
-          tx: Math.max(-6, Math.min(6, s.tx || 0)),
+          tx: Math.max(-3, Math.min(3, s.tx || 0)),
           ty: Math.max(-5, Math.min(5, s.ty || 0)),
           tz: Math.max(-5, Math.min(5, s.tz || 0)),
           rx: Math.max(-10, Math.min(10, s.rx || 0)),
           ry: Math.max(-10, Math.min(10, s.ry || 0)),
           rz: Math.max(-45, Math.min(45, s.rz || 0)),
-        }));
+        };
+        applyTransform(s.fdi, newT, true);
         applied++;
       });
       toast({ title: `AI plan applied`, description: `${applied} teeth have suggested movements. Review and refine as needed.` });
@@ -596,6 +708,98 @@ function TreatmentPlannerContent({ scanId }: { scanId: number }) {
       toast({ title: "AI plan failed", description: String(err), variant: "destructive" });
     }
     setAutoPlanning(false);
+  };
+
+  // ── AI Auto-Align: fetch structured per-tooth suggestions from Groq ──
+  const handleAiAutoAlign = async () => {
+    if (segments.length === 0) {
+      toast({ title: "No teeth loaded", description: "Load a scan first.", variant: "destructive" });
+      return;
+    }
+    setAiAlignLoading(true);
+    setAiAlignResult(null);
+    setAcceptedSuggestions(new Set());
+    setRejectedSuggestions(new Set());
+    setShowAiPanel(true);
+    try {
+      const FDI_TO_TYPE: Record<number, string> = {
+        11:"incisor",12:"incisor",21:"incisor",22:"incisor",31:"incisor",32:"incisor",41:"incisor",42:"incisor",
+        13:"canine",23:"canine",33:"canine",43:"canine",
+        14:"premolar",15:"premolar",24:"premolar",25:"premolar",34:"premolar",35:"premolar",44:"premolar",45:"premolar",
+        16:"molar",17:"molar",18:"molar",26:"molar",27:"molar",28:"molar",36:"molar",37:"molar",38:"molar",46:"molar",47:"molar",48:"molar",
+      };
+      const teethPayload = segments.map(s => ({
+        fdi: s.fdiNumber,
+        label: FDI_NAMES[s.fdiNumber] ?? String(s.fdiNumber),
+        type: FDI_TO_TYPE[s.fdiNumber] ?? "premolar",
+        x: s.centroidX,
+        y: s.centroidY,
+        z: s.centroidZ,
+      }));
+
+      const res = await fetch("/api/ai-copilot/auto-align", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ teeth: teethPayload, analysisData: analysisData ?? undefined }),
+      });
+
+      if (!res.ok) throw new Error("AI auto-align request failed");
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      if (reader) {
+        let buffer = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+          for (const line of lines) {
+            if (!line.trim().startsWith("data: ")) continue;
+            try {
+              const d = JSON.parse(line.trim().slice(6)) as { plan?: AlignResult; done?: boolean; error?: string };
+              if (d.error) throw new Error(d.error);
+              if (d.plan) setAiAlignResult(d.plan as AlignResult);
+            } catch { /* skip malformed */ }
+          }
+        }
+      }
+    } catch (err) {
+      toast({ title: "AI Align failed", description: String(err), variant: "destructive" });
+      setShowAiPanel(false);
+    } finally {
+      setAiAlignLoading(false);
+    }
+  };
+
+  const handleAcceptSuggestion = (s: AlignSuggestion) => {
+    if (!transforms.has(s.fdi)) return;
+    const current = transforms.get(s.fdi)!;
+    const newT = {
+      ...current,
+      tx: Math.max(-3, Math.min(3, s.tx || 0)),
+      ty: Math.max(-5, Math.min(5, s.ty || 0)),
+      tz: Math.max(-5, Math.min(5, s.tz || 0)),
+      rx: Math.max(-10, Math.min(10, s.rx || 0)),
+      ry: Math.max(-10, Math.min(10, s.ry || 0)),
+      rz: Math.max(-45, Math.min(45, s.rz || 0)),
+    };
+    applyTransform(s.fdi, newT, true);
+    setAcceptedSuggestions(prev => new Set([...prev, s.fdi]));
+    setRejectedSuggestions(prev => { const n = new Set(prev); n.delete(s.fdi); return n; });
+  };
+
+  const handleRejectSuggestion = (fdi: number) => {
+    setRejectedSuggestions(prev => new Set([...prev, fdi]));
+    setAcceptedSuggestions(prev => { const n = new Set(prev); n.delete(fdi); return n; });
+  };
+
+  const handleAcceptAllSuggestions = () => {
+    if (!aiAlignResult) return;
+    aiAlignResult.suggestions.forEach(s => handleAcceptSuggestion(s));
+    toast({ title: "All AI suggestions applied", description: `${aiAlignResult.suggestions.length} teeth moved. Review in 3D view.` });
   };
 
   const handleSendToStaging = () => {
@@ -690,6 +894,16 @@ function TreatmentPlannerContent({ scanId }: { scanId: number }) {
           <Separator orientation="vertical" className="h-5 bg-zinc-700" />
           <Button size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 gap-1" onClick={handleAutoGeneratePlan} disabled={status !== "ready" || autoPlanning}>
             {autoPlanning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}AI Plan
+          </Button>
+          <Button
+            size="sm"
+            className={`h-7 text-xs gap-1 ${showAiPanel ? "bg-indigo-700 hover:bg-indigo-800" : "bg-indigo-600 hover:bg-indigo-700"}`}
+            onClick={aiAlignLoading ? undefined : (aiAlignResult ? () => setShowAiPanel(v => !v) : handleAiAutoAlign)}
+            disabled={status !== "ready" || aiAlignLoading}
+            title="AI Auto-Align: let Groq AI suggest optimal tooth movements"
+          >
+            {aiAlignLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Brain className="h-3 w-3" />}
+            {aiAlignLoading ? "Analyzing…" : aiAlignResult ? `AI Align (${aiAlignResult.suggestions.length})` : "AI Align"}
           </Button>
           <Button size="sm" className="h-7 text-xs bg-violet-600 hover:bg-violet-700 gap-1" onClick={handleSavePlan} disabled={status !== "ready"}>
             <Download className="h-3 w-3" />Save Plan
@@ -830,6 +1044,155 @@ function TreatmentPlannerContent({ scanId }: { scanId: number }) {
                 <span className="ml-2 font-bold" style={{ color: SEVERITY_COLOR[selectedCollisionState!.worstSeverity] }}>
                   ⚠ {selectedCollisionState!.worstSeverity}
                 </span>
+              )}
+            </div>
+          )}
+
+          {/* AI Auto-Align Suggestions Panel */}
+          {showAiPanel && (
+            <div className="absolute top-3 right-3 w-80 max-h-[calc(100%-3rem)] flex flex-col bg-zinc-900/95 border border-indigo-500/40 rounded-xl shadow-2xl shadow-indigo-900/40 overflow-hidden z-10 backdrop-blur">
+              {/* Panel header */}
+              <div className="flex items-center justify-between px-3 py-2.5 border-b border-zinc-800 bg-indigo-950/60 shrink-0">
+                <div className="flex items-center gap-2">
+                  <Brain className="h-4 w-4 text-indigo-400" />
+                  <span className="text-xs font-bold text-indigo-200">AI Auto-Align</span>
+                  {aiAlignLoading && <Loader2 className="h-3 w-3 animate-spin text-indigo-400" />}
+                </div>
+                <button
+                  onClick={() => setShowAiPanel(false)}
+                  className="text-zinc-500 hover:text-zinc-200 transition-colors text-xs px-1"
+                >✕</button>
+              </div>
+
+              {/* Loading state */}
+              {aiAlignLoading && !aiAlignResult && (
+                <div className="flex flex-col items-center justify-center py-8 text-zinc-400 text-sm gap-2">
+                  <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
+                  <p>Analyzing tooth positions…</p>
+                  <p className="text-xs text-zinc-500">Groq AI is computing alignments</p>
+                </div>
+              )}
+
+              {/* Results */}
+              {aiAlignResult && (
+                <>
+                  {/* Assessment */}
+                  <div className="px-3 py-2.5 border-b border-zinc-800 space-y-1.5 shrink-0">
+                    <p className="text-xs text-zinc-300 leading-relaxed">{aiAlignResult.overallAssessment}</p>
+                    <div className="flex gap-3 text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-zinc-500">Crowding:</span>
+                        <div className="w-16 h-1.5 bg-zinc-700 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-orange-400 transition-all" style={{ width: `${(aiAlignResult.crowdingScore ?? 0) * 10}%` }} />
+                        </div>
+                        <span className="text-orange-300 font-bold">{aiAlignResult.crowdingScore?.toFixed(1)}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-zinc-500">Symmetry:</span>
+                        <div className="w-16 h-1.5 bg-zinc-700 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-emerald-400 transition-all" style={{ width: `${(aiAlignResult.symmetryScore ?? 0) * 10}%` }} />
+                        </div>
+                        <span className="text-emerald-300 font-bold">{aiAlignResult.symmetryScore?.toFixed(1)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Accept All */}
+                  <div className="px-3 py-2 border-b border-zinc-800 shrink-0">
+                    <Button
+                      size="sm"
+                      className="w-full h-7 text-xs bg-indigo-600 hover:bg-indigo-700 gap-1"
+                      onClick={handleAcceptAllSuggestions}
+                      disabled={aiAlignResult.suggestions.every(s => acceptedSuggestions.has(s.fdi))}
+                    >
+                      <Sparkles className="h-3 w-3" />Apply All {aiAlignResult.suggestions.length} Suggestions
+                    </Button>
+                  </div>
+
+                  {/* Per-tooth suggestions */}
+                  <ScrollArea className="flex-1">
+                    <div className="p-2 space-y-1.5">
+                      {aiAlignResult.suggestions.map(s => {
+                        const accepted = acceptedSuggestions.has(s.fdi);
+                        const rejected = rejectedSuggestions.has(s.fdi);
+                        const priorityColor = s.priority === "high" ? "text-red-400" : s.priority === "medium" ? "text-yellow-400" : "text-green-400";
+                        return (
+                          <div
+                            key={s.fdi}
+                            className={`rounded-lg border p-2.5 transition-all ${
+                              accepted ? "border-emerald-500/50 bg-emerald-900/20" :
+                              rejected ? "border-zinc-700/50 bg-zinc-800/30 opacity-50" :
+                              "border-zinc-700 bg-zinc-800/50"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-2 mb-1.5">
+                              <div>
+                                <span className="text-xs font-bold text-zinc-200">
+                                  {FDI_NAMES[s.fdi] ?? `Tooth ${s.fdi}`}
+                                  <span className="text-zinc-500 font-normal ml-1">#{s.fdi}</span>
+                                </span>
+                                <span className={`ml-2 text-[10px] font-semibold uppercase ${priorityColor}`}>{s.priority}</span>
+                                {s.confidence && (
+                                  <span className="ml-1 text-[10px] text-zinc-500">{Math.round(s.confidence * 100)}% conf</span>
+                                )}
+                              </div>
+                              <div className="flex gap-1 shrink-0">
+                                {!accepted && !rejected && (
+                                  <>
+                                    <button
+                                      onClick={() => handleAcceptSuggestion(s)}
+                                      className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-600/80 hover:bg-emerald-600 text-white transition-colors"
+                                      title="Apply this suggestion"
+                                    >✓</button>
+                                    <button
+                                      onClick={() => handleRejectSuggestion(s.fdi)}
+                                      className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-700/80 hover:bg-zinc-600 text-zinc-300 transition-colors"
+                                      title="Skip this suggestion"
+                                    >✕</button>
+                                  </>
+                                )}
+                                {accepted && <span className="text-[10px] text-emerald-400 font-bold">Applied</span>}
+                                {rejected && (
+                                  <button
+                                    onClick={() => { setRejectedSuggestions(prev => { const n = new Set(prev); n.delete(s.fdi); return n; }); }}
+                                    className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
+                                  >Restore</button>
+                                )}
+                              </div>
+                            </div>
+                            {/* Movement values */}
+                            <div className="flex flex-wrap gap-1.5 text-[10px] mb-1.5">
+                              {(["tx","ty","tz"] as const).map(k => Math.abs(s[k] ?? 0) > 0.01 && (
+                                <span key={k} className="bg-zinc-700/60 px-1 py-0.5 rounded text-zinc-300">
+                                  {k.toUpperCase()} {(s[k] ?? 0) > 0 ? "+" : ""}{(s[k] ?? 0).toFixed(1)}mm
+                                </span>
+                              ))}
+                              {(["rx","ry","rz"] as const).map(k => Math.abs(s[k] ?? 0) > 0.01 && (
+                                <span key={k} className="bg-zinc-700/60 px-1 py-0.5 rounded text-zinc-300">
+                                  {k.toUpperCase()} {(s[k] ?? 0) > 0 ? "+" : ""}{(s[k] ?? 0).toFixed(1)}°
+                                </span>
+                              ))}
+                            </div>
+                            {/* Rationale */}
+                            <p className="text-[10px] text-zinc-400 leading-relaxed">{s.rationale}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+
+                  {/* Refresh button */}
+                  <div className="px-3 py-2 border-t border-zinc-800 shrink-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full h-6 text-xs border-zinc-700 text-indigo-400 hover:bg-indigo-500/10 gap-1"
+                      onClick={handleAiAutoAlign}
+                    >
+                      <Sparkles className="h-3 w-3" />Re-analyze
+                    </Button>
+                  </div>
+                </>
               )}
             </div>
           )}
