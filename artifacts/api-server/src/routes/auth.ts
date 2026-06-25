@@ -29,14 +29,20 @@ router.post("/login", async (req, res) => {
 
   req.session.doctorId = doctor.id;
 
-  res.json({
-    doctor: {
-      id: doctor.id,
-      name: doctor.name,
-      email: doctor.email,
-      role: doctor.role,
-      createdAt: doctor.createdAt.toISOString(),
-    },
+  req.session.save((err) => {
+    if (err) {
+      res.status(500).json({ error: "Session save failed" });
+      return;
+    }
+    res.json({
+      doctor: {
+        id: doctor.id,
+        name: doctor.name,
+        email: doctor.email,
+        role: doctor.role,
+        createdAt: doctor.createdAt.toISOString(),
+      },
+    });
   });
 });
 
