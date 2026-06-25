@@ -46,9 +46,9 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function UploadScanDialog({ onSuccess }: { onSuccess?: () => void }) {
+export function UploadScanDialog({ onSuccess, caseId: propCaseId }: { onSuccess?: () => void; caseId?: number }) {
   const [open, setOpen] = useState(false);
-  const [caseId, setCaseId] = useState("");
+  const [caseId, setCaseId] = useState(propCaseId ? String(propCaseId) : "");
   const [jawType, setJawType] = useState("upper");
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -62,14 +62,16 @@ export function UploadScanDialog({ onSuccess }: { onSuccess?: () => void }) {
       if (!r.ok) throw new Error("Failed");
       return r.json() as Promise<{ cases: CaseItem[] }>;
     },
-    enabled: open,
+    enabled: open && !propCaseId,
   });
 
   const cases = casesData?.cases ?? [];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !caseId) return;
+    const activeCaseId = propCaseId ? String(propCaseId) : caseId;
+    if (!file || !activeCaseId) return;
+    setCaseId(activeCaseId);
 
     setUploading(true);
     setProgress(0);
@@ -79,7 +81,7 @@ export function UploadScanDialog({ onSuccess }: { onSuccess?: () => void }) {
     formData.append("jawType", jawType);
 
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", `/api/cases/${caseId}/scans/upload`, true);
+    xhr.open("POST", `/api/cases/${activeCaseId}/scans/upload`, true);
     xhr.withCredentials = true;
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100));
@@ -89,7 +91,7 @@ export function UploadScanDialog({ onSuccess }: { onSuccess?: () => void }) {
       if (xhr.status >= 200 && xhr.status < 300) {
         toast({ title: "Scan uploaded successfully" });
         setOpen(false);
-        setCaseId("");
+        if (!propCaseId) setCaseId("");
         onSuccess?.();
       } else {
         try {
@@ -108,6 +110,9 @@ export function UploadScanDialog({ onSuccess }: { onSuccess?: () => void }) {
     xhr.send(formData);
   };
 
+  const activeCaseId = propCaseId ? String(propCaseId) : caseId;
+  const isReady = !!activeCaseId;
+
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!uploading) setOpen(v); }}>
       <DialogTrigger asChild>
@@ -117,26 +122,26 @@ export function UploadScanDialog({ onSuccess }: { onSuccess?: () => void }) {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Upload 3D Scan</DialogTitle>
+          <DialogTitle>Upload 3D Jaw Model</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
-          {casesLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : cases.length === 0 ? (
-            <div className="flex items-start gap-3 p-4 bg-muted rounded-lg">
-              <AlertCircle className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-              <div className="text-sm text-muted-foreground">
-                You need to{" "}
-                <a href="/cases" className="text-primary hover:underline font-medium">
-                  create a patient case
-                </a>{" "}
-                before uploading a scan. Scans are always linked to a case.
+          {!propCaseId && (
+            casesLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
-            </div>
-          ) : (
-            <>
+            ) : cases.length === 0 ? (
+              <div className="flex items-start gap-3 p-4 bg-muted rounded-lg">
+                <AlertCircle className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                <div className="text-sm text-muted-foreground">
+                  You need to{" "}
+                  <a href="/cases" className="text-primary hover:underline font-medium">
+                    create a patient case
+                  </a>{" "}
+                  before uploading a scan. Scans are always linked to a case.
+                </div>
+              </div>
+            ) : (
               <div className="space-y-2">
                 <Label>Patient Case</Label>
                 <Select value={caseId} onValueChange={setCaseId} disabled={uploading}>
@@ -153,7 +158,11 @@ export function UploadScanDialog({ onSuccess }: { onSuccess?: () => void }) {
                   </SelectContent>
                 </Select>
               </div>
+            )
+          )}
 
+          {(propCaseId || cases.length > 0) && (
+            <>
               <div className="space-y-2">
                 <Label>Jaw Type</Label>
                 <Select value={jawType} onValueChange={setJawType} disabled={uploading}>
@@ -166,6 +175,12 @@ export function UploadScanDialog({ onSuccess }: { onSuccess?: () => void }) {
                     <SelectItem value="both">Both (Bite Registration)</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="rounded-lg border-2 border-dashed border-muted-foreground/30 p-6 text-center space-y-2">
+                <Upload className="h-8 w-8 text-muted-foreground mx-auto" />
+                <p className="text-sm font-medium">Select your 3D jaw model file</p>
+                <p className="text-xs text-muted-foreground">Supports .STL, .OBJ, .PLY — up to 200 MB</p>
               </div>
 
               <input
@@ -192,10 +207,10 @@ export function UploadScanDialog({ onSuccess }: { onSuccess?: () => void }) {
               ) : (
                 <Button
                   className="w-full gap-2"
-                  disabled={!caseId}
+                  disabled={!isReady}
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <Upload className="h-4 w-4" /> Select File (.stl, .obj, .ply)
+                  <Upload className="h-4 w-4" /> Choose File (.stl, .obj, .ply)
                 </Button>
               )}
             </>

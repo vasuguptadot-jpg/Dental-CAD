@@ -30,6 +30,7 @@ import PracticeAnalytics from "@/pages/practice-analytics";
 import LabPortal from "@/pages/lab-portal/index";
 import OrderDetail from "@/pages/lab-portal/order-detail";
 import ScanLibrary from "@/pages/scan-library/index";
+import SecurityAnalyzer from "@/pages/security";
 
 const queryClient = new QueryClient();
 
@@ -102,6 +103,9 @@ function Router() {
 
       {/* Scan Library */}
       <Route path="/scan-library"><ProtectedRoute component={ScanLibrary} /></Route>
+
+      {/* Security */}
+      <Route path="/security"><ProtectedRoute component={SecurityAnalyzer} /></Route>
 
       <Route component={NotFound} />
     </Switch>

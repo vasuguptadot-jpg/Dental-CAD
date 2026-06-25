@@ -161,15 +161,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
           ))}
 
           <div className="px-2 py-1.5 mt-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-            <ExternalLink className="h-3 w-3 text-muted-foreground" /> Products
+            <ShieldAlert className="h-3 w-3 text-muted-foreground" /> Security
           </div>
-          <a href="/security-analyzer/" target="_blank" rel="noopener noreferrer" className="block">
-            <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground">
+          <Link href="/security">
+            <Button
+              variant={isActive("/security") ? "secondary" : "ghost"}
+              className={`w-full justify-start gap-2 ${isActive("/security") ? "font-medium" : "text-muted-foreground hover:text-foreground"}`}
+            >
               <ShieldAlert className="h-4 w-4" />
               Security Analyzer
-              <ExternalLink className="h-3 w-3 ml-auto opacity-50" />
             </Button>
-          </a>
+          </Link>
           <a href="/ortho-mobile/" target="_blank" rel="noopener noreferrer" className="block">
             <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground">
               <Smartphone className="h-4 w-4" />
